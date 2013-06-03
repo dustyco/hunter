@@ -4,7 +4,7 @@
 	Main loop, input, drawing, interface with SFML
 */
 
-
+#include <cmath>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -25,20 +25,18 @@ struct ClientApp {
 	sf::Clock        clock;
 	sf::Texture      block_texture;
 	sf::Sprite       block_sprite;
+	sf::Vector2i     mouse_screen;
+	sf::Vector2f     mouse_world;
+	float            zoom;
 	
 	int  go          (int argc, char const** argv);
 	bool setup       (int argc, char const** argv);
 	bool loop        ();
 	bool cleanup     ();
-	
 	void handleInput ();
-//	void drawLine    (const Vec& a, const Vec& b);
-//	void drawPoly    (const Poly& poly, sf::Color color, bool outline = false, bool points = false);
-//	void drawPoint   (const Vec& point, sf::Color color);
-//	void drawObject  (const Object& object, sf::Color color);
-//	Vec  viewTransformInverse (const Vec& v);
 };
 
+// The program starts and ends here
 int ClientApp::go (int argc, char const** argv) {
 	if (!setup(argc, argv)) {
 		cout << "Error: ClientApp::setup() returned false" << endl;
@@ -78,6 +76,8 @@ bool ClientApp::setup (int argc, char const** argv) {
 //		float scale = 1.0;
 	} else return false;
 	
+	zoom = 100;
+	
 	return true;
 }
 
@@ -87,11 +87,9 @@ bool ClientApp::loop () {
 	int w = window.getSize().x;
 	int h = window.getSize().y;
 	float screen_aspect = float(w)/float(h);
-	float zoom = 5;
-	// World position and size of view frame
-	sf::View view(sf::Vector2f(0, 0), sf::Vector2f(screen_aspect*zoom, zoom));
-//	view.reset(sf::FloatRect(-screen_aspect/2, 0.5, screen_aspect, -1));
-	// Cover whole window
+	sf::View view;
+	view.setCenter(0, 0);
+	view.setSize(screen_aspect*zoom, -zoom);
 	view.setViewport(sf::FloatRect(0, 0, 1, 1));
 	window.setView(view);
 	
@@ -100,22 +98,20 @@ bool ClientApp::loop () {
 	if (!running) return false;
 
 	// SIMULATE /////////////////////////////////////////////////////////////////////////
-	cout << "Simulation goes here" << endl;
+	// TODO
 	
 	// DRAW //////////////////////////////////////////////////////////////////////////////
 	window.clear();
 	
-//	line_sprite.rotate(dt*30);
-//	line_sprite.setOrigin(0, 1.5);
-//	line_sprite.setScale(1, 1.0/h*zoom*2);
-//	line_sprite.setScale(0.02, 1);
-//	window.draw(line_sprite);
-
-	block_sprite.rotate(3.14159*2/60/3);
-//	block_sprite.setOrigin(0, 1.5);
-	block_sprite.setScale(1, 1.0/h*zoom*2);
-	block_sprite.setScale(0.02, 1);
+	sf::Color GREEN(40, 240, 40, 255);
+	block_sprite.setColor(GREEN);
+	block_sprite.rotate(30.0/60);
+	block_sprite.setOrigin(8, 8);
+	block_sprite.setScale(3.0/16.0, 3.0/16.0);
+//	block_sprite.setScale(0.02, 1);
 	window.draw(block_sprite);
+	
+	window.display();
 	
 	return true;
 }
@@ -128,8 +124,8 @@ void ClientApp::handleInput ()
 {
 	// State based controls
 //	grab = sf::Mouse::isButtonPressed(sf::Mouse::Left);
-//	sf::Vector2i sf_mouse_pos = sf::Mouse::getPosition(window);
-//	mouse = viewTransformInverse(Vec(sf_mouse_pos.x, sf_mouse_pos.y));
+	mouse_screen = sf::Mouse::getPosition(window);
+	mouse_world = window.mapPixelToCoords(mouse_screen);
 	
 	// Event based controls
 	sf::Event event;
@@ -146,6 +142,10 @@ void ClientApp::handleInput ()
 //					case sf::Mouse::Right:      placePoint(); break;
 				}
 				break;
+			case sf::Event::MouseWheelMoved:
+				zoom *= pow(1.1, event.mouseWheel.delta);
+				zoom = min(max(zoom, 10.0f), 100.0f);
+				break;
 			case sf::Event::KeyPressed:
 				switch (event.key.code) {
 					case sf::Keyboard::Escape:  running = false; return;
@@ -154,69 +154,6 @@ void ClientApp::handleInput ()
 		}
 	}
 }
-/*
-Vec ClientApp::viewTransformInverse (const Vec& v) {
-	Vec r;
-	sf::Vector2u win = window.getSize();
-	float screen_aspect = float(win.y)/win.x;
-	r.x = (v.x-win.x/2)/win.y*zoom;
-	r.y = (-v.y+win.y/2)/win.y*zoom;
-	return r;
-}
-
-void ClientApp::drawLine (const Vec& a, const Vec& b) {
-	line_sprite.setOrigin(0, 1.5);
-	line_sprite.setPosition(a.x, a.y);
-	line_sprite.setScale(length(b-a), 1.0/window.getSize().y*zoom*2.5);
-	line_sprite.setRotation(angle_aa(b-a)*57.29578);
-	window.draw(line_sprite);
-}
-
-void ClientApp::drawPoly (const Poly& poly, sf::Color color, bool outline, bool points) {
-	if (poly.size()>=2) {
-		sf::ConvexShape sf_shape(poly.size());
-		color.a = 150;
-		sf_shape.setOutlineColor(color);
-		color.a = 50;
-		sf_shape.setFillColor(color);
-	
-		int i = 0;
-		Vec last = *(--poly.end());
-		for (Poly::const_iterator it = poly.begin(); it!=poly.end(); it++,i++) {
-			sf_shape.setPoint(i, sf::Vector2f(it->x, it->y));
-			Vec now = *it;
-			Vec mid = (now+last)*0.5f;
-			Vec dif = (now-last);
-			Vec norm(-dif.y, dif.x);
-			
-			if (outline) drawLine(last, now);
-			last = now;
-		}
-		window.draw(sf_shape);
-	}
-	if (points) {
-		color.a = 250;
-		for (Poly::const_iterator it = poly.begin(); it!=poly.end(); it++) {
-			drawPoint(*it, color);
-		}
-	}
-}
-
-void ClientApp::drawPoint (const Vec& point, sf::Color color) {
-	dot_sprite.setPosition(point.x, point.y);
-	dot_sprite.setScale(1.0/window.getSize().y*zoom, 1.0/window.getSize().y*zoom);
-	window.draw(dot_sprite);
-}
-
-void ClientApp::drawObject (const Object& object, sf::Color color) {
-	Mat rot(object.rot);
-	Poly p;
-	for (Poly::const_iterator it = object.points.begin(); it!=object.points.end(); it++)
-		p.push_back(rot*(*it) + object.pos);
-	drawPoly(p, color, true, false);
-	drawPoint(object.pos, color);
-}
-*/
 
 int main (int argc, char const** argv) {
 	ClientApp app;
