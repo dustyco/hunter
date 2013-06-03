@@ -73,8 +73,10 @@ message("OPENGL_gl_LIBRARY: ${OPENGL_gl_LIBRARY}")
 
 
 # Find SFML
+if (NOT "$ENV{SFML_ROOT}" STREQUAL "")
+	set(CMAKE_MODULE_PATH $ENV{SFML_ROOT}/cmake/Modules ${CMAKE_MODULE_PATH})
+endif ()
 if (MSVC)
-	set(CMAKE_MODULE_PATH $ENV{SFMLDIR}/cmake/Modules ${CMAKE_MODULE_PATH})
 	set(SFML_STATIC_LIBRARIES TRUE)
 endif ()
 find_package(SFML REQUIRED COMPONENTS system window graphics)
