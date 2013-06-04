@@ -55,14 +55,21 @@ bool ClientApp::setup (int argc, char const** argv) {
 	// SET UP WINDOW ///////////////////////////////////////////////////////////////////
 	string window_title = "Hunter";
 	sf::VideoMode video_mode = sf::VideoMode::getDesktopMode();
-//	window.create( video_mode, window_title, sf::Style::Fullscreen | sf::Style::Close );
-	window.create( video_mode, window_title, sf::Style::Resize | sf::Style::Close );
-	window.setVerticalSyncEnabled(true);
-	window.setMouseCursorVisible(true);
 	#ifdef SFML_SYSTEM_WINDOWS
-		// Maximize on Windows because it can't figure out how to display properly
+		// Windows will literally make the window this size and
+		// let it get covered by the task bar so shrink it
+		// Also, when the user unmaximizes it, this is what
+		// will be remembered
+		video_mode.width -= 50;
+		video_mode.height -= 100;
+	#endif
+	window.create( video_mode, window_title, sf::Style::Resize | sf::Style::Close );
+	#ifdef SFML_SYSTEM_WINDOWS
+		// Maximize to fill the screen
 		ShowWindow(window.getSystemHandle(), SW_MAXIMIZE);
 	#endif
+	window.setVerticalSyncEnabled(true);
+	window.setMouseCursorVisible(true);
 	
 	// True until we're ready to exit
 	running = true;
@@ -154,6 +161,14 @@ void ClientApp::handleInput ()
 		}
 	}
 }
+
+#ifdef _MSC_VER
+	#ifdef DEBUG
+		#pragma comment(linker, "/SUBSYSTEM:CONSOLE")
+	#else
+		#pragma comment(linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+	#endif
+#endif
 
 int main (int argc, char const** argv) {
 	ClientApp app;
