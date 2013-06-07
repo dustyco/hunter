@@ -3,6 +3,8 @@
 /*
 	Higher Math Utility Headers
 	http://github.com/dustyco/hmath
+	
+	Revision 1
 */
 
 
