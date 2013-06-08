@@ -25,7 +25,8 @@ struct ClientSim : public Sim {
 	float         cam_zoom; // Meters from top to bottom of screen
 	Ship::FlightControls player_flight_controls;
 	sf::TcpSocket tcp;
-	string        host;
+	string        hostname;
+	bool          connected;
 	
 	bool ClientSim_init () {
 		if (stars_far.loadFromFile("stars_far.jpg")) {
@@ -91,23 +92,8 @@ struct ClientSim : public Sim {
 		
 		// SET UP SOCKET /////////////////////////////////////////////////
 		tcp.setBlocking(false);
-		host = "google.com";
-		cout << "Connecting to " << host << ":" << PORT << endl;
-		switch (tcp.connect(host, PORT, sf::seconds(2))) {
-			case sf::Socket::Done:
-				cout << "Done" << endl;
-				break;
-			case sf::Socket::NotReady:
-				cout << "NotReady" << endl;
-				break;
-			case sf::Socket::Disconnected:
-				cout << "Connecting to " << host << ":" << PORT << endl;
-				tcp.connect(sf::IpAddress(host), PORT);
-				break;
-			case sf::Socket::Error:
-				cout << "TCP Error" << endl;
-				break;
-		}
+		connected = false;
+		cout << "Server: " << hostname << ":" << PORT << endl;
 		
 		return true;
 	}
@@ -120,19 +106,24 @@ struct ClientSim : public Sim {
 	
 	void ClientSim_netCheck () {
 		sf::Packet packet;
-		switch (tcp.receive(packet)) {
+		packet << "hello world";
+		switch (tcp.send(packet)) {
 			case sf::Socket::Done:
-				cout << "Done" << endl;
+				cout << "send(): Done" << endl;
+				connected = true;
 				break;
 			case sf::Socket::NotReady:
-//				cout << "NotReady" << endl;
+				cout << "send(): NotReady" << endl;
 				break;
 			case sf::Socket::Disconnected:
-				cout << "Connecting to " << host << ":" << PORT << endl;
-				tcp.connect(sf::IpAddress(host), PORT);
+				cout << "send(): Disconnected: reconnecting" << endl;
+				connected = false;
+				tcp.connect(hostname, PORT);
 				break;
 			case sf::Socket::Error:
-				cout << "TCP Error" << endl;
+				cout << "send(): Error: reconnecting" << endl;
+				connected = false;
+				tcp.connect(hostname, PORT);
 				break;
 		}
 	}

@@ -50,6 +50,15 @@ int ClientApp::go (int argc, char const** argv) {
 
 bool ClientApp::setup (int argc, char const** argv) {
 	
+	// Server hostname
+	if (argc>1) {
+		hostname = argv[1];
+	} else {
+		cout << "Usage: " << argv[0] << " [hostname]" << endl;
+		cout << "\tConnects to [hostname]:80 and sends \"hello world\" every frame" << endl;
+		return 1;
+	}
+	
 	// SET UP WINDOW ///////////////////////////////////////////////////////////////////
 	string window_title = "Hunter";
 	sf::VideoMode video_mode = sf::VideoMode::getDesktopMode();

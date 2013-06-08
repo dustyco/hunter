@@ -27,7 +27,7 @@ void Ship::calculatePhysics () {
 	local_center /= float(n);
 	local_center *= CELL_WIDTH;
 	mass = CELL_MASS*n;
-	cout << "Mass: " << mass << endl;
+//	cout << "Mass: " << mass << endl;
 	
 	// Find moment of inertia
 	// http://en.wikipedia.org/wiki/Parallel_axis_theorem
@@ -43,7 +43,7 @@ void Ship::calculatePhysics () {
 	}
 	term_2 *= CELL_MASS;
 	moment = term_1 + term_2;
-	cout << "Moment: " << moment << endl;
+//	cout << "Moment: " << moment << endl;
 }
 
 void Ship::applyControls (float dt) {
