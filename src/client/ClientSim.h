@@ -1,6 +1,7 @@
 
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Network.hpp>
 #include "Sim.h"
 #include "util/convert_sf_vector.h"
 
@@ -12,17 +13,19 @@ const float DEG_PER_RAD = 180.0/PI;
 const int CURRENT_SHIP = 1;
 
 struct ClientSim : public Sim {
-	sf::Texture stars_far;
-	sf::Texture stars_medium;
-	sf::Texture stars_close;
-	sf::Texture part_texture;
-	sf::Sprite  part_sprite;
-	sf::Texture hull_texture;
-	sf::Sprite  hull_sprite;
-	Vec2        cam_pos;  // Meters
-	float       cam_rot;  // Radians
-	float       cam_zoom; // Meters from top to bottom of screen
+	sf::Texture   stars_far;
+	sf::Texture   stars_medium;
+	sf::Texture   stars_close;
+	sf::Texture   part_texture;
+	sf::Sprite    part_sprite;
+	sf::Texture   hull_texture;
+	sf::Sprite    hull_sprite;
+	Vec2          cam_pos;  // Meters
+	float         cam_rot;  // Radians
+	float         cam_zoom; // Meters from top to bottom of screen
 	Ship::FlightControls player_flight_controls;
+	sf::TcpSocket tcp;
+	string        host;
 	
 	bool ClientSim_init () {
 		if (stars_far.loadFromFile("stars_far.jpg")) {
@@ -47,13 +50,13 @@ struct ClientSim : public Sim {
 			hull_sprite.setScale(scale, scale);
 		} else return false;
 		
-		if (part_texture.loadFromFile("parts.png")) {
+/*		if (part_texture.loadFromFile("parts.png")) {
 			part_texture.setSmooth(true);
 			part_sprite.setTexture(part_texture);
 			part_sprite.setOrigin(32, 32);
 			part_sprite.setScale(2.0/64, -2.0/64);
 		} else return false;
-		
+*/		
 		{
 			Ship ship;
 			for (int y=0; y!=16; ++y)
@@ -75,7 +78,7 @@ struct ClientSim : public Sim {
 			ship.cells[1][3].there = true;
 			ship.cells[1][4].there = true;
 			
-			ship.cells[1][2].part = new Part(TRACTOR_BEAM);
+//			ship.cells[1][2].part = new Part(TRACTOR_BEAM);
 			ship.calculatePhysics();
 			ship.posv = Vec2(1, 0);
 			ship.rotv = 0;
@@ -86,12 +89,52 @@ struct ClientSim : public Sim {
 		
 		player_flight_controls.clear();
 		
+		// SET UP SOCKET /////////////////////////////////////////////////
+		tcp.setBlocking(false);
+		host = "google.com";
+		cout << "Connecting to " << host << ":" << PORT << endl;
+		switch (tcp.connect(host, PORT, sf::seconds(2))) {
+			case sf::Socket::Done:
+				cout << "Done" << endl;
+				break;
+			case sf::Socket::NotReady:
+				cout << "NotReady" << endl;
+				break;
+			case sf::Socket::Disconnected:
+				cout << "Connecting to " << host << ":" << PORT << endl;
+				tcp.connect(sf::IpAddress(host), PORT);
+				break;
+			case sf::Socket::Error:
+				cout << "TCP Error" << endl;
+				break;
+		}
+		
 		return true;
 	}
 	
 	void ClientSim_tick (float dt) {
+		ClientSim_netCheck();
 		ships[CURRENT_SHIP].flight_controls = player_flight_controls;
 		Sim_tick(dt);
+	}
+	
+	void ClientSim_netCheck () {
+		sf::Packet packet;
+		switch (tcp.receive(packet)) {
+			case sf::Socket::Done:
+				cout << "Done" << endl;
+				break;
+			case sf::Socket::NotReady:
+//				cout << "NotReady" << endl;
+				break;
+			case sf::Socket::Disconnected:
+				cout << "Connecting to " << host << ":" << PORT << endl;
+				tcp.connect(sf::IpAddress(host), PORT);
+				break;
+			case sf::Socket::Error:
+				cout << "TCP Error" << endl;
+				break;
+		}
 	}
 	
 	void ClientSim_draw (sf::RenderTarget& target) {
@@ -162,7 +205,7 @@ struct ClientSim : public Sim {
 		// DRAW EACH SHIP //////////////////////////////////////////////////////////////////
 		for (ShipVector::const_iterator ship_it=ships.begin(); ship_it!=ships.end(); ++ship_it) {
 			const Ship& ship = *ship_it;
-			part_sprite.setRotation(ship.rot*DEG_PER_RAD);
+//			part_sprite.setRotation(ship.rot*DEG_PER_RAD);
 			hull_sprite.setRotation(ship.rot*DEG_PER_RAD);
 			hull_sprite.setColor(sf::Color(40, 240, 40, 255));
 			
@@ -178,12 +221,12 @@ struct ClientSim : public Sim {
 					hull_sprite.setPosition(global.x, global.y);
 					target.draw(hull_sprite);
 					
-					if (cell.part) {
+/*					if (cell.part) {
 						part_sprite.setPosition(global.x, global.y);
 						part_sprite.setTextureRect(partTexture(cell.part->id, 64));
 						target.draw(part_sprite);
 					}
-				}
+*/				}
 			}
 		}
 	}
