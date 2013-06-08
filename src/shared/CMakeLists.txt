@@ -3,6 +3,8 @@
 #add_subdirectory(dir)
 add_sources(shared
 	Sim.cpp
+	Ship.cpp
+	Cell.cpp
 )
 
 # Shared static library so we don't have to redundantly compile shared code

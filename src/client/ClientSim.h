@@ -15,8 +15,10 @@ struct ClientSim : public Sim {
 	sf::Texture stars_far;
 	sf::Texture stars_medium;
 	sf::Texture stars_close;
-	sf::Texture block_texture;
-	sf::Sprite  block_sprite;
+	sf::Texture part_texture;
+	sf::Sprite  part_sprite;
+	sf::Texture hull_texture;
+	sf::Sprite  hull_sprite;
 	Vec2        cam_pos;  // Meters
 	float       cam_rot;  // Radians
 	float       cam_zoom; // Meters from top to bottom of screen
@@ -36,36 +38,44 @@ struct ClientSim : public Sim {
 			stars_close.setRepeated(true);
 		}
 		
-		if (block_texture.loadFromFile("block-16.png")) {
-			block_texture.setSmooth(true);
-			block_sprite.setTexture(block_texture);
-	//		block_sprite.setTextureRect(sf::IntRect(64*4, 64*5, 64, 64));
-			sf::Vector2<unsigned int> size = block_texture.getSize();
-			block_sprite.setOrigin(size.x/2, size.y/2);
+		if (hull_texture.loadFromFile("block-16.png")) {
+			hull_texture.setSmooth(true);
+			hull_sprite.setTexture(hull_texture);
+			sf::Vector2<unsigned int> size = hull_texture.getSize();
+			hull_sprite.setOrigin(size.x/2, size.y/2);
 			float scale = 2.0/size.x;
-			block_sprite.setScale(scale, scale);
+			hull_sprite.setScale(scale, scale);
+		} else return false;
+		
+		if (part_texture.loadFromFile("parts.png")) {
+			part_texture.setSmooth(true);
+			part_sprite.setTexture(part_texture);
+			part_sprite.setOrigin(32, 32);
+			part_sprite.setScale(2.0/64, -2.0/64);
 		} else return false;
 		
 		{
 			Ship ship;
 			for (int y=0; y!=16; ++y)
 			for (int x=0; x!=5; ++x) {
-				ship.cells[x][y] = true;
+				ship.cells[x][y].there = true;
 			}
 			ship.calculatePhysics();
 			ships.push_back(ship);
 		}
 		{
 			Ship ship;
-			ship.cells[1][0] = true;
-			ship.cells[0][1] = true;
-			ship.cells[1][1] = true;
-			ship.cells[2][1] = true;
-			ship.cells[0][2] = true;
-			ship.cells[1][2] = true;
-			ship.cells[2][2] = true;
-			ship.cells[1][3] = true;
-			ship.cells[1][4] = true;
+			ship.cells[1][0].there = true;
+			ship.cells[0][1].there = true;
+			ship.cells[1][1].there = true;
+			ship.cells[2][1].there = true;
+			ship.cells[0][2].there = true;
+			ship.cells[1][2].there = true;
+			ship.cells[2][2].there = true;
+			ship.cells[1][3].there = true;
+			ship.cells[1][4].there = true;
+			
+			ship.cells[1][2].part = new Part(TRACTOR_BEAM);
 			ship.calculatePhysics();
 			ship.posv = Vec2(1, 0);
 			ship.rotv = 0;
@@ -152,22 +162,37 @@ struct ClientSim : public Sim {
 		// DRAW EACH SHIP //////////////////////////////////////////////////////////////////
 		for (ShipVector::const_iterator ship_it=ships.begin(); ship_it!=ships.end(); ++ship_it) {
 			const Ship& ship = *ship_it;
-			block_sprite.setRotation(ship.rot*DEG_PER_RAD);
-			block_sprite.setColor(sf::Color(40, 240, 40, 255));
+			part_sprite.setRotation(ship.rot*DEG_PER_RAD);
+			hull_sprite.setRotation(ship.rot*DEG_PER_RAD);
+			hull_sprite.setColor(sf::Color(40, 240, 40, 255));
 			
 			// Draw each cell
 			Mat2 rot(ship.rot);
-			for (int y=0; y!=STRIDE; ++y)
-			for (int x=0; x!=STRIDE; ++x) {
-				if (ship.cells[x][y]) {
+			for (int y=0; y!=CELL_STRIDE; ++y)
+			for (int x=0; x!=CELL_STRIDE; ++x) {
+				const Cell& cell = ship.cells[x][y];
+				if (cell.there) {
 					Vec2 local = Vec2(x, y)*CELL_WIDTH - ship.local_center;
 					Vec2 global = rot*local + ship.pos;
 					
-					block_sprite.setPosition(global.x, global.y);
-					target.draw(block_sprite);
+					hull_sprite.setPosition(global.x, global.y);
+					target.draw(hull_sprite);
+					
+					if (cell.part) {
+						part_sprite.setPosition(global.x, global.y);
+						part_sprite.setTextureRect(partTexture(cell.part->id, 64));
+						target.draw(part_sprite);
+					}
 				}
 			}
 		}
+	}
+	
+	sf::IntRect partTexture (PartID id, int size) {
+		PartID row = id / SHIP_PART_STRIDE;
+		PartID col = id % SHIP_PART_STRIDE;
+//		cout << id << ", " << col << ", " << row << endl;
+		return sf::IntRect(col*size, row*size, size, size);
 	}
 };
 
