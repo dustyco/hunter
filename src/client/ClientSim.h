@@ -5,6 +5,9 @@
 #include "Sim.h"
 #include "util/convert_sf_vector.h"
 
+#ifndef _WIN32
+	#include <csignal>
+#endif
 #include <iostream>
 using namespace std;
 
@@ -95,6 +98,9 @@ struct ClientSim : public Sim {
 		connected = false;
 		cout << "Server: " << hostname << ":" << PORT << endl;
 		
+		cam_rot = 0;
+		cam_pos = Vec2::ORIGIN;
+		
 		return true;
 	}
 	
@@ -105,6 +111,10 @@ struct ClientSim : public Sim {
 	}
 	
 	void ClientSim_netCheck () {
+		
+		#ifndef _WIN32
+			signal(SIGPIPE,SIG_IGN);
+		#endif
 		sf::Packet packet;
 		packet << "hello world";
 		switch (tcp.send(packet)) {
