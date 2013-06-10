@@ -14,7 +14,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SFML/Graphics.hpp>
-#include <SFML/System/Clock.hpp>
 #include "common.h"
 #include "ClientSim.h"
 using namespace std;
@@ -52,10 +51,10 @@ bool ClientApp::setup (int argc, char const** argv) {
 	
 	// Server hostname
 	if (argc>1) {
-		hostname = argv[1];
+		server_hostname = argv[1];
 	} else {
 		cout << "Usage: " << argv[0] << " [hostname]" << endl;
-		cout << "\tConnects to [hostname]:80 and sends \"hello world\" every frame" << endl;
+		cout << "\tConnects to [hostname]:" << PORT << endl;
 		return 1;
 	}
 	

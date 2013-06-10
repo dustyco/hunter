@@ -1,5 +1,6 @@
 
 
+#pragma once
 #include "Part.h"
 
 
@@ -15,5 +16,5 @@ struct Cell {
 	
 	Cell () : there(false), part(0) {}
 	Cell (const Cell& cell) { *this = cell; if (part) part = new Part(*cell.part); }
-	~Cell () { if (part) ; }
+	~Cell () { /* TODO Deallocate but it might get copied and temporary stack ships will destroy internal resources of copies */ }
 };

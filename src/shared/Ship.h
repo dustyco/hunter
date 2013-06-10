@@ -1,5 +1,6 @@
 
 
+#pragma once
 #include <vector>
 #include "common.h"
 #include "Cell.h"
