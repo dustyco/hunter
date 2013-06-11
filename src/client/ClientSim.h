@@ -93,6 +93,7 @@ bool ClientSim::ClientSim_init ()
 		ship.flight_controls.forward = 0.5;
 		ships.push_back(ship);
 	}
+	int size = ships.size();
 	
 	player_flight_controls.clear();
 	
