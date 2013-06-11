@@ -9,7 +9,10 @@ add_sources(shared
 
 # Shared static library so we don't have to redundantly compile shared code
 add_library(shared ${shared_SRC})
-require_libraries(shared shared)
+require_libraries(shared
+	shared
+	${Boost_FILESYSTEM_LIBRARY}
+)
 if(UNIX)
 	require_libraries(shared pthread)
 endif()

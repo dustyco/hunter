@@ -39,7 +39,7 @@ void ClientNet::ClientNet_init ()
 		// Suppress process ending SIGPIPE signal from writing to a closed socket
 		signal(SIGPIPE,SIG_IGN);
 	#endif
-	cout << "Server: " << server_hostname << ":" << PORT << endl;
+	cout << "Server: " << server_hostname << ":" << net::DEFAULT_PORT << endl;
 	server_address = sf::IpAddress(server_hostname);
 	udp.bind(sf::Socket::AnyPort);
 	tcp.setBlocking(false);
@@ -62,13 +62,14 @@ void ClientNet::handleDisconnected ()
 	// Try a connection
 	if (time_since_connect>=RECONNECT_DELAY) {
 		cout << "Connecting" << endl;
-		tcp.connect(server_address, PORT);
+		tcp.connect(server_address, net::DEFAULT_PORT);
 		time_since_connect = 0;
 	}
 	
 	// Try to send a greeting
 	sf::Packet greeting;
-	greeting << "Hunter Greeting";
+	greeting << net::GREET_NUMBER << net::GREET_VERSION;
+	greeting << net::GREET_NAME_TYPE_NEW << string("dustyco");
 	if (tcp.send(greeting)==sf::Socket::Done) {
 		cout << "Connected! Greeting sent, awaiting ack" << endl;
 		status = RECEIVE_GREET_ACK;

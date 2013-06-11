@@ -54,7 +54,7 @@ bool ClientApp::setup (int argc, char const** argv) {
 		server_hostname = argv[1];
 	} else {
 		cout << "Usage: " << argv[0] << " [hostname]" << endl;
-		cout << "\tConnects to [hostname]:" << PORT << endl;
+		cout << "\tConnects to [hostname]:" << net::DEFAULT_PORT << endl;
 		return 1;
 	}
 	

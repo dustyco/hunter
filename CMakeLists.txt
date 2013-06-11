@@ -85,6 +85,23 @@ set(SFML_LIBRARIES ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${SFML_LIBRARIES})
 message("SFML_LIBRARIES: ${SFML_LIBRARIES}")
 
 
+# Find Boost ##################################################################
+if(Boost_USE_STATIC_LIBS STREQUAL "")
+	set(Boost_USE_STATIC_LIBS TRUE)
+endif()
+set(BOOST_ROOT_ENV $ENV{BOOST_ROOT})
+if(BOOST_ROOT_ENV)
+	# Get boost from a specifically defined folder
+	set(BOOST_ROOT $ENV{BOOST_ROOT})
+	message("BOOST_ROOT: " ${BOOST_ROOT})
+elseif(WIN32)
+	# Get boost from the ogre sdk
+	set(BOOST_ROOT $ENV{OGRE_HOME}/boost)
+	message("BOOST_ROOT: " ${BOOST_ROOT})
+endif()
+message("Boost_USE_STATIC_LIBS: ${Boost_USE_STATIC_LIBS}")
+find_package(Boost REQUIRED COMPONENTS filesystem)
+include_directories(${Boost_INCLUDE_DIR})
 
 
 # Work through the source tree

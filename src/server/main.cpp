@@ -69,6 +69,7 @@ bool ServerApp::loop ()
 
 bool ServerApp::cleanup ()
 {
+	ServerSim_cleanup();
 	return true;
 }
 
