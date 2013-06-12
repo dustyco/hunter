@@ -8,6 +8,7 @@
 #include <iostream>
 #include <SFML/Network.hpp>
 #include "common.h"
+#include "common_sfml_network.h"
 #include "Sim.h"
 #include "PlayerDB.h"
 using namespace std;
@@ -18,13 +19,16 @@ const float CLIENT_TIMEOUT_PERIOD = 5;  // Seconds
 
 struct ServerNet
 {
-	enum Status {
+	enum Status
+	{
 		GET_GREETING,
-		GET_ID
+		ACK_GREETING,
+		NORMAL
 	};
 	
 	struct Client : private NonCopyable
 	{
+		PlayerID      id;
 		float         timeout;
 		bool          disconnect;
 		string        disconnect_reason;
@@ -43,7 +47,9 @@ struct ServerNet
 	bool ServerNet_init    ();
 	void ServerNet_cleanup ();
 	void ServerNet_tick    (float dt);
+	void readUdp           ();
 	void handleGetGreeting (Client& client);
+	void handleAckGreeting (Client& client);
 };
 
 bool ServerNet::ServerNet_init ()
@@ -90,6 +96,9 @@ void ServerNet::ServerNet_tick (float dt)
 		}
 	}
 	
+	// Read UDP messages
+	readUdp();
+	
 	// Each client connection
 	for (ClientList::iterator client_it=clients.begin(); client_it!=clients.end(); ++client_it) {
 		Client& client = *(*client_it);
@@ -103,6 +112,29 @@ void ServerNet::ServerNet_tick (float dt)
 		
 		switch (client.status) {
 			case GET_GREETING: handleGetGreeting(client); break;
+			case ACK_GREETING: handleAckGreeting(client); break;
+		}
+	}
+}
+
+void ServerNet::readUdp ()
+{
+	sf::Packet     packet;
+	sf::IpAddress  remote_address;
+	unsigned short remote_port;
+	while (udp.receive(packet, remote_address, remote_port)==sf::Socket::Done) {
+		uint32_t greet_number;
+		PlayerID id;
+		uint8_t msg_type;
+		if (
+			!(packet >> greet_number >> id >> msg_type) ||
+			greet_number!=net::GREET_NUMBER ||
+			!player_db.has(id)
+		) continue;
+		cout << "UDP from " << remote_address << ":" << remote_port << endl;
+		PilotControls controls;
+		if (msg_type==net::MSG_TYPE_CONTROLS && (packet >> controls)) {
+			player_db.get(id).pilot_controls = controls;
 		}
 	}
 }
@@ -173,13 +205,25 @@ void ServerNet::handleGetGreeting (Client& client)
 			return;
 		}
 		// Proceed
-		PlayerInfo& info = player_db.get(greet_name);
-		
-		
-		return;
+		client.id = player_db.get(greet_name).id;
+		client.status = ACK_GREETING;
+		handleAckGreeting(client);
 	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
 		client.disconnect = true;
-		return;
+	}
+}
+
+void ServerNet::handleAckGreeting (Client& client)
+{
+	sf::Packet greeting_ack;
+	greeting_ack << net::MSG_TYPE_GREET_ACK << client.id;
+	
+	sf::Socket::Status err = client.tcp.send(greeting_ack);
+	if (err==sf::Socket::Done) {
+		cout << "Greeting ack sent" << endl;
+		client.status = NORMAL;
+	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
+		client.disconnect = true;
 	}
 }
 

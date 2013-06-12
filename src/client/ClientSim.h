@@ -25,7 +25,6 @@ struct ClientSim : public Sim, public ClientNet
 	Vec2          cam_pos;  // Meters
 	float         cam_rot;  // Radians
 	float         cam_zoom; // Meters from top to bottom of screen
-	Ship::FlightControls player_flight_controls;
 	
 	bool ClientSim_init ();
 	void ClientSim_tick (float dt);
@@ -94,7 +93,7 @@ bool ClientSim::ClientSim_init ()
 		ships.push_back(ship);
 	}
 	
-	player_flight_controls.clear();
+	pilot_controls.clear();
 	
 	ClientNet_init();
 	
@@ -107,7 +106,7 @@ bool ClientSim::ClientSim_init ()
 void ClientSim::ClientSim_tick (float dt)
 {
 	ClientNet_tick(dt);
-	ships[CURRENT_SHIP].flight_controls = player_flight_controls;
+//	ships[CURRENT_SHIP].flight_controls = pilot_controls;
 	Sim_tick(dt);
 }
 

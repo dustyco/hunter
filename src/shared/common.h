@@ -18,9 +18,6 @@ typedef line<3,float> Line3;
 typedef line<4,float> Line4;
 
 
-typedef uint32_t PlayerID;
-
-
 class NonCopyable
 {
 protected:
@@ -31,6 +28,19 @@ private:
 	NonCopyable & operator = (const NonCopyable &);
 };
 
+
+typedef uint32_t PlayerID;
+
+
+// Analog axes from -1 to 1
+struct PilotControls
+{
+	Vec2 translate;
+	float rotate;
+	PilotControls () { clear(); }
+	void clear () { translate = Vec2::ORIGIN; rotate = 0; }
+};
+
 namespace net
 {
 	const uint16_t DEFAULT_PORT = 32123;
@@ -38,5 +48,9 @@ namespace net
 	const uint32_t GREET_VERSION = 0;
 	const uint32_t GREET_NAME_TYPE_NEW = 0;
 	const uint32_t GREET_NAME_TYPE_EXISTING = 1;
+	const uint8_t MSG_TYPE_DISCONNECT = 0;
+	const uint8_t MSG_TYPE_HEARTBEAT = 1;
+	const uint8_t MSG_TYPE_GREET_ACK = 2;
+	const uint8_t MSG_TYPE_CONTROLS = 3;
 };
 

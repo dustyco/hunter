@@ -12,6 +12,8 @@ struct PlayerInfo
 	PlayerID id;
 	string   name;
 	
+	PilotControls pilot_controls;
+	
 	PlayerInfo () : id(0) {}
 	PlayerInfo (const PlayerID& id_, const string& name_) : id(id_), name(name_) {}
 };
