@@ -55,7 +55,7 @@ bool ClientApp::setup (int argc, char const** argv) {
 	} else {
 		cout << "Usage: " << argv[0] << " [hostname]" << endl;
 		cout << "\tConnects to [hostname]:" << net::DEFAULT_PORT << endl;
-		return 1;
+		return false;
 	}
 	
 	// SET UP WINDOW ///////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ void ClientApp::handleInput ()
 		}
 	}
 }
-
+/*
 #ifdef _MSC_VER
 	#ifdef DEBUG
 		#pragma comment(linker, "/SUBSYSTEM:CONSOLE")
@@ -155,7 +155,7 @@ void ClientApp::handleInput ()
 		#pragma comment(linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 	#endif
 #endif
-
+*/
 int main (int argc, char const** argv) {
 	ClientApp app;
 	return app.go(argc, argv);
