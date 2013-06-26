@@ -34,14 +34,17 @@ struct ServerNet
 		string        disconnect_reason;
 		Status        status;
 		sf::TcpSocket tcp;
+		PilotControls pilot_controls;
 		
 		Client () : disconnect(false), timeout(0), status(GET_GREETING) {}
 	};
 	typedef list<Client*> ClientList;
+	typedef map<PlayerID,Client*> ClientMap;
 	
 	sf::TcpListener tcp_listener;
 	sf::UdpSocket   udp;
-	ClientList      clients;
+	ClientList      clients_connecting;
+	ClientMap       clients;
 	PlayerDB        player_db;
 	
 	bool ServerNet_init    ();
@@ -55,7 +58,6 @@ struct ServerNet
 bool ServerNet::ServerNet_init ()
 {
 	player_db.load("gamestate.txt");
-//	player_db.add(PlayerInfo(player_db.issueID(), "UncleSamEagle"));
 	
 	// BIND TCP AND UDP SOCKETS ////////////////////////////////////////
 	#ifndef _WIN32
@@ -89,19 +91,23 @@ void ServerNet::ServerNet_tick (float dt)
 		if (tcp_listener.accept(client->tcp) == sf::Socket::Done) {
 			std::cout << "New connection from " << client->tcp.getRemoteAddress() << std::endl;
 			client->tcp.setBlocking(false);
-			clients.push_back(client);
+			clients_connecting.push_back(client);
 		} else {
 			delete client;
 			break;
 		}
 	}
 	
-	// Read UDP messages
-	readUdp();
-	
-	// Each client connection
-	for (ClientList::iterator client_it=clients.begin(); client_it!=clients.end(); ++client_it) {
+	// Each connectING client connection
+	for (ClientList::iterator client_it=clients_connecting.begin(); client_it!=clients_connecting.end();) {
 		Client& client = *(*client_it);
+		
+		if (client.status==NORMAL) {
+			// Put it into the connected group
+			clients[client.id] = *client_it;
+			clients_connecting.erase(client_it++);
+			continue;
+		}
 		
 		// Accumulate time and see if we should disconnect
 		client.timeout += dt;
@@ -114,7 +120,27 @@ void ServerNet::ServerNet_tick (float dt)
 			case GET_GREETING: handleGetGreeting(client); break;
 			case ACK_GREETING: handleAckGreeting(client); break;
 		}
+		++client_it;
 	}
+	
+/*	// Each connectED client connection
+	for (ClientList::iterator client_it=clients.begin(); client_it!=clients.end();) {
+		Client& client = *(*client_it);
+		
+		// Accumulate time and see if we should disconnect
+		client.timeout += dt;
+		if (client.timeout>CLIENT_TIMEOUT_PERIOD) {
+			client.disconnect = true;
+			client.disconnect_reason = "Timeout (you probably shouldn't be receiving this)";
+		}
+		
+		// TODO Send stuff
+		
+		++client_it;
+	}
+*/	
+	// Read UDP messages
+	readUdp();
 }
 
 void ServerNet::readUdp ()
@@ -128,13 +154,16 @@ void ServerNet::readUdp ()
 		uint8_t msg_type;
 		if (
 			!(packet >> greet_number >> id >> msg_type) ||
-			greet_number!=net::GREET_NUMBER ||
-			!player_db.has(id)
+			greet_number!=net::GREET_NUMBER
 		) continue;
 		cout << "UDP from " << remote_address << ":" << remote_port << endl;
 		PilotControls controls;
 		if (msg_type==net::MSG_TYPE_CONTROLS && (packet >> controls)) {
-			player_db.get(id).pilot_controls = controls;
+			ClientMap::iterator it = clients.find(id);
+			if (it!=clients.end()) {
+				// Update the client's controls
+				it->second->pilot_controls = controls;
+			}
 		}
 	}
 }

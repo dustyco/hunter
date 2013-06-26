@@ -115,10 +115,15 @@ void ClientApp::handleInput ()
 	mouse_screen = sf::Mouse::getPosition(window);
 	mouse_world = window.mapPixelToCoords(mouse_screen);
 	
-//	player_flight_controls.forward = sf::Keyboard::isKeyPressed(sf::Keyboard::W)?(1):(0);
-//	player_flight_controls.backward = sf::Keyboard::isKeyPressed(sf::Keyboard::S)?(1):(0);
-//	player_flight_controls.turn_left = sf::Keyboard::isKeyPressed(sf::Keyboard::A)?(1):(0);
-//	player_flight_controls.turn_right = sf::Keyboard::isKeyPressed(sf::Keyboard::D)?(1):(0);
+	pilot_controls.translate.y = 
+		  (sf::Keyboard::isKeyPressed(sf::Keyboard::W)?(1):(0))
+		- (sf::Keyboard::isKeyPressed(sf::Keyboard::S)?(1):(0));
+	pilot_controls.translate.x = 
+		  (sf::Keyboard::isKeyPressed(sf::Keyboard::E)?(1):(0))
+		- (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)?(1):(0));
+	pilot_controls.rotate =
+		  (sf::Keyboard::isKeyPressed(sf::Keyboard::A)?(1):(0))
+		- (sf::Keyboard::isKeyPressed(sf::Keyboard::D)?(1):(0));
 	
 	// Event based controls
 	sf::Event event;

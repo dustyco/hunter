@@ -88,8 +88,6 @@ bool ClientSim::ClientSim_init ()
 		ship.calculatePhysics();
 		ship.posv = Vec2(1, 0);
 		ship.rotv = 0;
-		ship.flight_controls.turn_right = 0.3;
-		ship.flight_controls.forward = 0.5;
 		ships.push_back(ship);
 	}
 	int size = ships.size();
@@ -107,7 +105,7 @@ bool ClientSim::ClientSim_init ()
 void ClientSim::ClientSim_tick (float dt)
 {
 	ClientNet_tick(dt);
-//	ships[CURRENT_SHIP].flight_controls = pilot_controls;
+	ships[CURRENT_SHIP].pilot_controls = pilot_controls;
 	Sim_tick(dt);
 }
 

@@ -47,11 +47,8 @@ void Ship::calculatePhysics () {
 }
 
 void Ship::applyControls (float dt) {
-	if (flight_controls.forward>0 || flight_controls.backward>0 || flight_controls.turn_left>0 || flight_controls.turn_right>0) {
-		float thrust = 100000;
-		Vec2 front = Mat2(rot)*Vec2::Y_UNIT;
-		posv += front*((flight_controls.forward-flight_controls.backward)*dt/mass*thrust);
-		rotv += (flight_controls.turn_left-flight_controls.turn_right)*dt/moment*thrust/2;
-	}
+	float thrust = 100000;
+	posv += Mat2(rot)*pilot_controls.translate*thrust/mass*dt;
+	rotv += pilot_controls.rotate*thrust/moment*dt;
 }
 

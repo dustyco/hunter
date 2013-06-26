@@ -11,17 +11,13 @@ struct Ship {
 	Cell cells[CELL_STRIDE][CELL_STRIDE];
 	
 	// Physics
-	Vec2 pos, posv;
-	float rot, rotv;
-	float mass, moment;
-	Vec2 local_center;
+	Vec2          pos, posv;
+	float         rot, rotv;
+	float         mass, moment;
+	Vec2          local_center;
 	
-	// Flight controls (analog 0 to 1)
-	struct FlightControls {
-		float forward, backward, turn_left, turn_right;
-		FlightControls () { clear(); }
-		void clear () { forward = backward = turn_left = turn_right = 0; }
-	} flight_controls;
+	// Controls
+	PilotControls pilot_controls;
 	
 	Ship () { clearPhysics(); }
 	void clearPhysics ();

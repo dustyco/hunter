@@ -41,8 +41,6 @@ struct ServerSim : public Sim, public ServerNet
 			ship.calculatePhysics();
 			ship.posv = Vec2(1, 0);
 			ship.rotv = 0;
-			ship.flight_controls.turn_right = 0.3;
-			ship.flight_controls.forward = 0.5;
 			ships.push_back(ship);
 		}
 		
