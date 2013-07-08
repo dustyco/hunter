@@ -5,6 +5,7 @@ add_sources(shared
 	Sim.cpp
 	Ship.cpp
 	Cell.cpp
+	PlayerDB.cpp
 )
 
 # Shared static library so we don't have to redundantly compile shared code

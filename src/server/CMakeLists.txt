@@ -2,9 +2,9 @@
 
 include_directories(.)
 #add_subdirectory(dir)
-add_sources(server
-	PlayerDB.cpp
-)
+#add_sources(server
+#	SourceFile.cpp
+#)
 
 # Suppress switch warnings
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")

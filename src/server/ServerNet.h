@@ -57,7 +57,7 @@ struct ServerNet
 
 bool ServerNet::ServerNet_init ()
 {
-	player_db.load("gamestate.txt");
+	PlayerDB::getSingleton().load("gamestate.txt");
 	
 	// BIND TCP AND UDP SOCKETS ////////////////////////////////////////
 	#ifndef _WIN32
@@ -80,7 +80,7 @@ bool ServerNet::ServerNet_init ()
 
 void ServerNet::ServerNet_cleanup ()
 {
-	player_db.save("gamestate.txt");
+	PlayerDB::getSingleton().save("gamestate.txt");
 }
 
 void ServerNet::ServerNet_tick (float dt)
@@ -170,6 +170,8 @@ void ServerNet::readUdp ()
 
 void ServerNet::handleGetGreeting (Client& client)
 {
+	PlayerDB& player_db = PlayerDB::getSingleton();
+	
 	sf::Packet greeting;
 	sf::Socket::Status err = client.tcp.receive(greeting);
 	if (err==sf::Socket::Done) {

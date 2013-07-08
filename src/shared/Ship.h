@@ -17,6 +17,7 @@ struct Ship {
 	Vec2          local_center;
 	
 	// Controls
+	PlayerID      pilot;
 	PilotControls pilot_controls;
 	
 	Ship () { clearPhysics(); }
