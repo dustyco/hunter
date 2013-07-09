@@ -1,12 +1,12 @@
 
 
 #pragma once
-#include <vector>
 #include "common.h"
 #include "Cell.h"
 
 
-struct Ship {
+struct Ship
+{
 	// Cells
 	Cell cells[CELL_STRIDE][CELL_STRIDE];
 	
@@ -20,11 +20,9 @@ struct Ship {
 	PlayerID      pilot;
 	PilotControls pilot_controls;
 	
-	Ship () { clearPhysics(); }
-	void clearPhysics ();
+	     Ship             () : pilot(0) { clearPhysics(); }
+	     Ship             (const Ship& ship) { *this = ship; }
+	void clearPhysics     ();
 	void calculatePhysics ();
-	void applyControls (float dt);
-	
-	Ship (const Ship& ship) { *this = ship; }
+	void applyControls    (float dt);
 };
-typedef std::vector<Ship> ShipVector;

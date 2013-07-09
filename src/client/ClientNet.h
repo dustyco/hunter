@@ -90,7 +90,7 @@ void ClientNet::handleDisconnected ()
 	// Try to send a greeting
 	sf::Packet greeting;
 	greeting << net::GREET_NUMBER << net::GREET_VERSION;
-	greeting << net::GREET_NAME_TYPE_NEW << string("dustyco");  // TODO
+	greeting << string("dustyco");  // TODO Player specified name
 	if (tcp.send(greeting)==sf::Socket::Done) {
 		cout << "Connected! Greeting sent, awaiting ack" << endl;
 		status = RECEIVE_GREET_ACK;

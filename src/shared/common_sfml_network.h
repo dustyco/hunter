@@ -6,6 +6,21 @@
 #include "common.h"
 
 
+namespace net
+{
+	// Constants used in network comm.
+	const uint16_t DEFAULT_PORT = 32123;
+	const uint32_t GREET_NUMBER = 1452267901;
+	const uint32_t GREET_VERSION = 0;
+	const uint32_t GREET_NAME_TYPE_NEW = 0;
+	const uint32_t GREET_NAME_TYPE_EXISTING = 1;
+	const uint8_t MSG_TYPE_DISCONNECT = 0;
+	const uint8_t MSG_TYPE_HEARTBEAT = 1;
+	const uint8_t MSG_TYPE_GREET_ACK = 2;
+	const uint8_t MSG_TYPE_CONTROLS = 3;
+};
+
+
 template <class Integer>
 Integer compressFloat (const float& f)
 {
