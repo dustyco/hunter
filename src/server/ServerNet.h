@@ -47,7 +47,6 @@ struct ServerNet
 	sf::UdpSocket   udp;
 	ClientList      clients_connecting;
 	ClientMap       clients;
-	PlayerDB        player_db;
 	
 	bool ServerNet_init    ();
 	void ServerNet_cleanup ();
