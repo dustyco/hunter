@@ -135,10 +135,10 @@ void ClientApp::handleInput ()
 //			case sf::Event::Resized:            break;
 //			case sf::Event::MouseMoved:         event.mouseMove.x; break;
 			case sf::Event::MouseButtonPressed:
-				switch (event.mouseButton.button) {
+//				switch (event.mouseButton.button) {
 //					case sf::Mouse::Left:       mouseLeft(); break;
 //					case sf::Mouse::Right:      mouseRight(); break;
-				}
+//				}
 				break;
 			case sf::Event::MouseWheelMoved:
 				cam_zoom *= pow(0.9, event.mouseWheel.delta);

@@ -6,8 +6,14 @@ include_directories(.)
 #	SourceFile.cpp
 #)
 
-# Suppress switch warnings
+# Suppress warnings
+if(MSVC)
+	# Conversions
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4305")
+endif()
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+	# Switches without all possible cases
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch")
 endif()
 message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")

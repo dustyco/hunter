@@ -20,6 +20,11 @@ namespace net
 	const uint8_t MSG_TYPE_CONTROLS = 3;
 };
 
+// The windows API is retarded and defines min/max macros
+// which conflict with all function calls by that name
+#ifdef max
+	#undef max
+#endif
 
 template <class Integer>
 Integer compressFloat (const float& f)
