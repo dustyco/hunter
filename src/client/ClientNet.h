@@ -65,6 +65,7 @@ void ClientNet::ClientNet_init ()
 	status = DISCONNECTED;
 	id = 0;
 	timeout = 0;
+	heartbeat = 0;
 }
 
 void ClientNet::ClientNet_tick (float dt)

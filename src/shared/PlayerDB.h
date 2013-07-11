@@ -18,7 +18,7 @@ struct PlayerInfo
 	PilotControls pilot_controls;
 	
 	PlayerInfo () : id(0), online(false) {}
-	PlayerInfo (const PlayerID& id_, const string& name_) : id(id_), name(name_) {}
+	PlayerInfo (const PlayerID& id_, const string& name_) : id(id_), name(name_), online(false) {}
 };
 
 // Global - reference using getSingleton()

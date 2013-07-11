@@ -39,7 +39,7 @@ struct ServerNet
 		sf::TcpSocket tcp;
 		PilotControls pilot_controls;
 		
-		     Client        () : timeout(0), status(GET_GREETING) {}
+		     Client        () : timeout(0), heartbeat(0), status(GET_GREETING) {}
 		void sendHeartbeat ();
 		void disconnect    (const string& reason);
 	};
@@ -158,6 +158,7 @@ bool ServerNet::ServerNet_tick (float dt)
 		// Accumulate time and see if we should disconnect
 		client.heartbeat += dt;
 		client.timeout += dt;
+//		cout << client.timeout << " vs " << CLIENT_TIMEOUT_PERIOD << endl;
 		if (client.timeout>CLIENT_TIMEOUT_PERIOD) client.disconnect("Server: Timed out");
 		
 		// Don't increment the client iterator if we remove the current one
@@ -231,7 +232,8 @@ void ServerNet::handleGetGreeting (Client& client)
 	
 	sf::Packet greeting;
 	sf::Socket::Status err = client.tcp.receive(greeting);
-	if (err==sf::Socket::Done) {
+	if (err==sf::Socket::Done)
+	{
 		client.timeout = 0;
 		uint32_t greet_number, greet_version;
 		string greet_name;
@@ -264,11 +266,10 @@ void ServerNet::handleGetGreeting (Client& client)
 			cout << "Registered a new player: " << greet_name << endl;
 			player_db.save("gamestate.txt");
 		}
-		// Proceed
-		PlayerInfo& info = player_db.get(greet_name);
 		// See if the player is already online
+		PlayerInfo& info = player_db.get(greet_name);
 		if (info.online) {
-			client.disconnect("Player is already connected");
+			client.disconnect(string("Player ") + greet_name + " is already connected");
 			return;
 		}
 		info.online = true;
@@ -276,9 +277,9 @@ void ServerNet::handleGetGreeting (Client& client)
 		client.id = info.id;
 		client.status = ACK_GREETING;
 		handleAckGreeting(client);
-	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
-		client.disconnect("Connection closed");
 	}
+	else if (err==sf::Socket::Disconnected || err==sf::Socket::Error)
+		client.disconnect("Connection closed");
 }
 
 void ServerNet::handleAckGreeting (Client& client)
@@ -344,6 +345,7 @@ void ServerNet::handleDisconnect (Client& client)
 	if (err==sf::Socket::Done) {
 //		cout << "Disconnect message sent" << endl;
 		client.status = DESTROY;
+		if (player_db.has(client.id)) player_db.get(client.id).online = false;
 	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
 //		cout << "Couldn't send disconnect message (disconnected or error)" << endl;
 		client.status = DESTROY;
