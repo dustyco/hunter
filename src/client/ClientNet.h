@@ -74,7 +74,7 @@ void ClientNet::ClientNet_tick (float dt)
 	// Accumulate time and see if we should disconnect
 	heartbeat += dt;
 	timeout += dt;
-	if (timeout>TIMEOUT_PERIOD) disconnect("Timed out");
+	if (timeout>TIMEOUT_PERIOD) disconnect("Server: Timed out");
 	
 	switch (status) {
 		case DISCONNECTED:      handleDisconnected(); break;
@@ -94,10 +94,10 @@ void ClientNet::handleDisconnected ()
 	}
 	
 	// Try to send a greeting
-	sf::Packet greeting;
-	greeting << net::GREET_NUMBER << net::GREET_VERSION;
-	greeting << string("dustyco");  // TODO Player specified name
-	if (tcp.send(greeting)==sf::Socket::Done) {
+	sf::Packet packet;
+	packet << net::GREET_NUMBER << net::GREET_VERSION;
+	packet << string("dustyco");  // TODO Player specified name
+	if (tcp.send(packet)==sf::Socket::Done) {
 		cout << "Connection established" << endl;
 		status = RECEIVE_GREET_ACK;
 	}
@@ -105,23 +105,31 @@ void ClientNet::handleDisconnected ()
 
 void ClientNet::handleReceiveGreetAck ()
 {
-	sf::Packet greeting_ack;
-	sf::Socket::Status err = tcp.receive(greeting_ack);
-	if (err==sf::Socket::Done) {
+	sf::Packet packet;
+	sf::Socket::Status err = tcp.receive(packet);
+	if (err==sf::Socket::Done)
+	{
 		timeout = 0;
-		uint8_t msg_type;
+		net::MsgType msg_type;
 		// Read it all
-		if (!(greeting_ack >> msg_type) || !(greeting_ack >> id)) {
+		if (!(packet >> msg_type)) {
 			disconnect("Malformed greeting ack");
 			return;
 		}
-		if (msg_type!=net::MSG_TYPE_GREET_ACK) {
-			disconnect("Unexpected message type");
-			return;
+		switch (msg_type)
+		{
+			case net::MSG_TYPE_DISCONNECT:
+				packet >> disconnect_reason;
+				disconnect(disconnect_reason);
+				return;
+			case net::MSG_TYPE_GREET_ACK:
+				if (packet >> id) status = NORMAL;
+				else              disconnect("Malformed greeting ack");
+				return;
 		}
-		status = NORMAL;
-//		cout << "Normal status" << endl;
-	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
+	}
+	else if (err==sf::Socket::Disconnected || err==sf::Socket::Error)
+	{
 		disconnect("Connection closed");
 		return;
 	}
@@ -136,7 +144,7 @@ void ClientNet::handleNormal ()
 		if (err==sf::Socket::Done)
 		{
 			timeout = 0;
-			uint8_t msg_type;
+			net::MsgType msg_type;
 			if (!(packet >> msg_type)) disconnect("Malformed packet");
 			switch (msg_type)
 			{

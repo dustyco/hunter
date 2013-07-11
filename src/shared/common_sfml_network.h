@@ -14,10 +14,11 @@ namespace net
 	const uint32_t GREET_VERSION = 0;
 	const uint32_t GREET_NAME_TYPE_NEW = 0;
 	const uint32_t GREET_NAME_TYPE_EXISTING = 1;
-	const uint8_t MSG_TYPE_DISCONNECT = 0;
-	const uint8_t MSG_TYPE_HEARTBEAT = 1;
-	const uint8_t MSG_TYPE_GREET_ACK = 2;
-	const uint8_t MSG_TYPE_CONTROLS = 3;
+	typedef uint8_t MsgType;
+	const MsgType MSG_TYPE_DISCONNECT = 0;
+	const MsgType MSG_TYPE_HEARTBEAT = 1;
+	const MsgType MSG_TYPE_GREET_ACK = 2;
+	const MsgType MSG_TYPE_CONTROLS = 3;
 };
 
 // The windows API is retarded and defines min/max macros

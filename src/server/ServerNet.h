@@ -143,7 +143,6 @@ bool ServerNet::ServerNet_tick (float dt)
 			case ACK_GREETING: handleAckGreeting(client); break;
 			case DISCONNECT:   handleDisconnect(client); break;
 			case DESTROY:
-				cout << "destroy connecting" << endl;
 				delete *client_it;
 				client_it = clients_connecting.erase(client_it);
 				increment = false;
@@ -159,7 +158,7 @@ bool ServerNet::ServerNet_tick (float dt)
 		// Accumulate time and see if we should disconnect
 		client.heartbeat += dt;
 		client.timeout += dt;
-		if (client.timeout>CLIENT_TIMEOUT_PERIOD) client.disconnect("Timed out");
+		if (client.timeout>CLIENT_TIMEOUT_PERIOD) client.disconnect("Server: Timed out");
 		
 		// Don't increment the client iterator if we remove the current one
 		// because the next will already be selected
@@ -168,7 +167,6 @@ bool ServerNet::ServerNet_tick (float dt)
 			case NORMAL:       handleNormal(client); break;
 			case DISCONNECT:   handleDisconnect(client); break;
 			case DESTROY:
-				cout << "destroy connected" << endl;
 				delete client_it->second;
 				clients.erase(client_it++);
 				increment = false;
@@ -195,7 +193,7 @@ void ServerNet::readUDP ()
 		// Read header
 		uint32_t greet_number;
 		PlayerID id;
-		uint8_t  msg_type;
+		net::MsgType  msg_type;
 		if (
 			!(packet >> greet_number >> id >> msg_type) ||
 			greet_number!=net::GREET_NUMBER
@@ -273,6 +271,7 @@ void ServerNet::handleGetGreeting (Client& client)
 			client.disconnect("Player is already connected");
 			return;
 		}
+		info.online = true;
 		cout << greet_name << " connected" << endl;
 		client.id = info.id;
 		client.status = ACK_GREETING;
@@ -308,7 +307,7 @@ void ServerNet::handleNormal (Client& client)
 		if (err==sf::Socket::Done)
 		{
 			client.timeout = 0;
-			uint8_t msg_type;
+			net::MsgType msg_type;
 			if (!(packet >> msg_type)) client.disconnect("Malformed packet");
 			switch (msg_type)
 			{
