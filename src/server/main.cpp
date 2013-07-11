@@ -47,7 +47,7 @@ bool ServerApp::setup (int argc, char const** argv)
 	// True until we're ready to exit
 	running = true;
 	
-	ServerSim_init();
+	if (!ServerSim_init()) return false;
 	
 	return true;
 }
@@ -59,7 +59,7 @@ bool ServerApp::loop ()
 	if (!running) return false;
 
 	// SIMULATE /////////////////////////////////////////////////////////////////////////
-	ServerSim_tick(TICK_PERIOD);
+	if (!ServerSim_tick(TICK_PERIOD)) return false;
 	
 	// Block till it's time for the next loop
 	sf::sleep( sf::microseconds(sf::Int64(1e6*TICK_PERIOD)) - clock.getElapsedTime() );

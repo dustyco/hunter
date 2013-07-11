@@ -20,7 +20,6 @@ using namespace std;
 
 
 struct ClientApp : ClientSim {
-	bool             running;
 	sf::RenderWindow window;
 	sf::Clock        clock;
 	sf::Vector2i     mouse_screen;
@@ -77,9 +76,6 @@ bool ClientApp::setup (int argc, char const** argv) {
 	window.setVerticalSyncEnabled(true);
 	window.setMouseCursorVisible(true);
 	
-	// True until we're ready to exit
-	running = true;
-	
 	cam_zoom = 20;
 	
 	ClientSim_init();
@@ -91,8 +87,8 @@ bool ClientApp::loop () {
 	
 	// INPUT ////////////////////////////////////////////////////////////////////////////
 	handleInput();
-	if (!running) return false;
-
+	if (status == QUIT) return false;
+	
 	// SIMULATE /////////////////////////////////////////////////////////////////////////
 	ClientSim_tick(1.0/60.0);
 	
@@ -129,7 +125,7 @@ void ClientApp::handleInput ()
 	sf::Event event;
 	while (window.pollEvent(event)) {
 		switch (event.type) {
-			case sf::Event::Closed:             running = false; return;
+			case sf::Event::Closed:             disconnect("Window closed"); return;
 //			case sf::Event::LostFocus:          releaseControls(); break;
 //			case sf::Event::GainedFocus:        break;
 //			case sf::Event::Resized:            break;
@@ -146,7 +142,7 @@ void ClientApp::handleInput ()
 				break;
 			case sf::Event::KeyPressed:
 				switch (event.key.code) {
-					case sf::Keyboard::Escape:  running = false; return;
+					case sf::Keyboard::Escape:  disconnect("Escape key pressed"); return;
 				}
 				break;
 		}

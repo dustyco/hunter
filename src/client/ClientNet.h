@@ -10,8 +10,8 @@ using namespace std;
 
 
 const float RECONNECT_DELAY = 0.5;  // Seconds
-const float HEARTBEAT_DELAY = 0.2;   // Seconds
-const float TIMEOUT_PERIOD = 5;   // Seconds
+const float HEARTBEAT_DELAY = 1;   // Seconds
+const float TIMEOUT_PERIOD = 3;   // Seconds
 
 
 struct ClientNet
@@ -20,7 +20,9 @@ struct ClientNet
 	{
 		DISCONNECTED,
 		RECEIVE_GREET_ACK,
-		NORMAL
+		NORMAL,
+		DISCONNECT,
+		QUIT
 	};
 	
 	PlayerID      id;
@@ -30,8 +32,8 @@ struct ClientNet
 	string        server_hostname;
 	float         ts_connect;
 	float         timeout;
+	float         heartbeat;
 	Status        status;
-	bool          disconnect;
 	string        disconnect_reason;
 	PilotControls pilot_controls;
 	
@@ -40,7 +42,10 @@ struct ClientNet
 	void handleDisconnected    ();
 	void handleReceiveGreetAck ();
 	void handleNormal          ();
+	void handleDisconnect      ();
+	void sendHeartbeat         ();
 	void sendControls          ();
+	void disconnect            (const string& reason);
 };
 
 
@@ -58,7 +63,6 @@ void ClientNet::ClientNet_init ()
 	udp.setBlocking(false);
 	ts_connect = RECONNECT_DELAY;
 	status = DISCONNECTED;
-	disconnect = false;
 	id = 0;
 	timeout = 0;
 }
@@ -68,13 +72,15 @@ void ClientNet::ClientNet_tick (float dt)
 	ts_connect += dt;
 	
 	// Accumulate time and see if we should disconnect
+	heartbeat += dt;
 	timeout += dt;
-	if (timeout>TIMEOUT_PERIOD) disconnect = true;
+	if (timeout>TIMEOUT_PERIOD) disconnect("Timed out");
 	
 	switch (status) {
 		case DISCONNECTED:      handleDisconnected(); break;
 		case RECEIVE_GREET_ACK: handleReceiveGreetAck(); break;
 		case NORMAL:            handleNormal(); break;
+		case DISCONNECT:        handleDisconnect(); break;
 	}
 }
 
@@ -92,7 +98,7 @@ void ClientNet::handleDisconnected ()
 	greeting << net::GREET_NUMBER << net::GREET_VERSION;
 	greeting << string("dustyco");  // TODO Player specified name
 	if (tcp.send(greeting)==sf::Socket::Done) {
-		cout << "Connected! Greeting sent, awaiting ack" << endl;
+		cout << "Connection established" << endl;
 		status = RECEIVE_GREET_ACK;
 	}
 }
@@ -106,28 +112,78 @@ void ClientNet::handleReceiveGreetAck ()
 		uint8_t msg_type;
 		// Read it all
 		if (!(greeting_ack >> msg_type) || !(greeting_ack >> id)) {
-			disconnect = true;
-			disconnect_reason = "Malformed greeting ack";
-			cout << disconnect_reason << endl;
+			disconnect("Malformed greeting ack");
 			return;
 		}
 		if (msg_type!=net::MSG_TYPE_GREET_ACK) {
-			disconnect = true;
-			disconnect_reason = "Unexpected message type";
-			cout << disconnect_reason << endl;
+			disconnect("Unexpected message type");
 			return;
 		}
 		status = NORMAL;
-		cout << "Normal status" << endl;
+//		cout << "Normal status" << endl;
 	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
-		disconnect = true;
+		disconnect("Connection closed");
 		return;
 	}
 }
 
 void ClientNet::handleNormal ()
 {
+	// Receive TCP messages
+	while (true) {
+		sf::Packet packet;
+		sf::Socket::Status err = tcp.receive(packet);
+		if (err==sf::Socket::Done)
+		{
+			timeout = 0;
+			uint8_t msg_type;
+			if (!(packet >> msg_type)) disconnect("Malformed packet");
+			switch (msg_type)
+			{
+				case net::MSG_TYPE_DISCONNECT:
+					packet >> disconnect_reason;
+					disconnect(disconnect_reason);
+					continue;
+			};
+		} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
+			disconnect("Connection closed");
+		}
+		break;
+	}
+	
+	// Send a TCP heartbeat packet if interval is passed
+	if (heartbeat>HEARTBEAT_DELAY) sendHeartbeat();
+	
 	sendControls();
+}
+
+void ClientNet::handleDisconnect ()
+{
+	cout << "Disconnected: " << disconnect_reason << endl;
+	
+	sf::Packet packet;
+	packet << net::MSG_TYPE_DISCONNECT;
+	packet << disconnect_reason;
+	
+	sf::Socket::Status err = tcp.send(packet);
+	if (err==sf::Socket::Done) {
+//		cout << "Disconnect message sent" << endl;
+		status = QUIT;
+	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
+//		cout << "Couldn't send disconnect message (disconnected or error)" << endl;
+		status = QUIT;
+	} else {
+//		cout << "Couldn't send disconnect message" << endl;
+	}
+}
+
+void ClientNet::sendHeartbeat ()
+{
+	sf::Packet input;
+	input << net::MSG_TYPE_HEARTBEAT;
+	if (tcp.send(input) == sf::Socket::Done) {
+		heartbeat = 0;
+	}
 }
 
 void ClientNet::sendControls ()
@@ -137,7 +193,14 @@ void ClientNet::sendControls ()
 	input << net::MSG_TYPE_CONTROLS;
 	input << pilot_controls;
 	if (udp.send(input, server_address, net::DEFAULT_PORT)==sf::Socket::Done) {
-		cout << "Sent input state" << endl;
+//		cout << "Sent input state" << endl;
 	}
+}
+
+void ClientNet::disconnect (const string& reason)
+{
+	if (status == QUIT) return;
+	disconnect_reason = reason;
+	status = DISCONNECT;
 }
 

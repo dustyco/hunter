@@ -10,5 +10,5 @@ typedef std::vector<Ship> ShipVector;
 struct Sim {
 	ShipVector ships;
 	
-	void Sim_tick (float dt);
+	bool Sim_tick (float dt);
 };

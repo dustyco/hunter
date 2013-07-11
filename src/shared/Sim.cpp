@@ -4,7 +4,7 @@
 #include "PlayerDB.h"
 
 
-void Sim::Sim_tick (float dt)
+bool Sim::Sim_tick (float dt)
 {
 	PlayerDB& player_db = PlayerDB::getSingleton();
 	
@@ -24,4 +24,5 @@ void Sim::Sim_tick (float dt)
 		ship.posv *= 0.99f;
 		ship.rotv *= 0.99f;
 	}
+	return true;
 }

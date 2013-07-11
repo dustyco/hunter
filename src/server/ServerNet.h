@@ -14,6 +14,7 @@
 using namespace std;
 
 
+const float HEARTBEAT_DELAY = 1;   // Seconds
 const float CLIENT_TIMEOUT_PERIOD = 3;  // Seconds
 
 
@@ -32,13 +33,15 @@ struct ServerNet
 	{
 		PlayerID      id;
 		float         timeout;
+		float         heartbeat;
 		string        disconnect_reason;
 		Status        status;
 		sf::TcpSocket tcp;
 		PilotControls pilot_controls;
 		
-		     Client     () : timeout(0), status(GET_GREETING) {}
-		void disconnect (const string& reason);
+		     Client        () : timeout(0), status(GET_GREETING) {}
+		void sendHeartbeat ();
+		void disconnect    (const string& reason);
 	};
 	typedef list<Client*> ClientList;
 	typedef map<PlayerID,Client*> ClientMap;
@@ -49,13 +52,21 @@ struct ServerNet
 	ClientMap       clients;
 	
 	bool ServerNet_init    ();
+	bool ServerNet_tick    (float dt);
 	void ServerNet_cleanup ();
-	void ServerNet_tick    (float dt);
 	void readUDP           ();
 	void handleGetGreeting (Client& client);
 	void handleAckGreeting (Client& client);
+	void handleNormal      (Client& client);
 	void handleDisconnect  (Client& client);
 };
+
+void ServerNet::Client::sendHeartbeat ()
+{
+	sf::Packet packet;
+	packet << net::MSG_TYPE_HEARTBEAT;
+	if (tcp.send(packet) == sf::Socket::Done) heartbeat = 0;
+}
 
 void ServerNet::Client::disconnect (const string& reason)
 {
@@ -94,7 +105,7 @@ void ServerNet::ServerNet_cleanup ()
 	PlayerDB::getSingleton().save("gamestate.txt");
 }
 
-void ServerNet::ServerNet_tick (float dt)
+bool ServerNet::ServerNet_tick (float dt)
 {
 	// ACCEPT NEW CONNECTIONS //////////////////////////////////////////
 	while (true) {
@@ -124,17 +135,21 @@ void ServerNet::ServerNet_tick (float dt)
 		client.timeout += dt;
 		if (client.timeout>CLIENT_TIMEOUT_PERIOD) client.disconnect("Timed out while connecting");
 		
+		// Don't increment the client iterator if we remove the current one
+		// because the next will already be selected
+		bool increment = true;
 		switch (client.status) {
 			case GET_GREETING: handleGetGreeting(client); break;
 			case ACK_GREETING: handleAckGreeting(client); break;
 			case DISCONNECT:   handleDisconnect(client); break;
 			case DESTROY:
-				cout << "destroy" << endl;
+				cout << "destroy connecting" << endl;
 				delete *client_it;
-				clients_connecting.erase(client_it);
+				client_it = clients_connecting.erase(client_it);
+				increment = false;
 				break;
 		}
-		++client_it;
+		if (increment) ++client_it;
 	}
 	
 	// Each connectED client connection
@@ -142,22 +157,30 @@ void ServerNet::ServerNet_tick (float dt)
 		Client& client = *(client_it->second);
 		
 		// Accumulate time and see if we should disconnect
+		client.heartbeat += dt;
 		client.timeout += dt;
 		if (client.timeout>CLIENT_TIMEOUT_PERIOD) client.disconnect("Timed out");
 		
+		// Don't increment the client iterator if we remove the current one
+		// because the next will already be selected
+		bool increment = true;
 		switch (client.status) {
+			case NORMAL:       handleNormal(client); break;
 			case DISCONNECT:   handleDisconnect(client); break;
 			case DESTROY:
-				cout << "destroy" << endl;
+				cout << "destroy connected" << endl;
 				delete client_it->second;
-				clients.erase(client_it);
+				clients.erase(client_it++);
+				increment = false;
 				break;
 		}
-		++client_it;
+		if (increment) ++client_it;
 	}
 	
 	// Read UDP messages
 	readUDP();
+	
+	return true;
 }
 
 void ServerNet::readUDP ()
@@ -267,11 +290,41 @@ void ServerNet::handleAckGreeting (Client& client)
 	
 	sf::Socket::Status err = client.tcp.send(packet);
 	if (err==sf::Socket::Done) {
-		cout << "Greeting ack sent" << endl;
+//		cout << "Greeting ack sent" << endl;
 		client.status = NORMAL;
 	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
 		client.disconnect("Connection closed");
 	}
+}
+
+void ServerNet::handleNormal (Client& client)
+{
+	PlayerDB& player_db = PlayerDB::getSingleton();
+	
+	// Receive TCP messages
+	while (true) {
+		sf::Packet packet;
+		sf::Socket::Status err = client.tcp.receive(packet);
+		if (err==sf::Socket::Done)
+		{
+			client.timeout = 0;
+			uint8_t msg_type;
+			if (!(packet >> msg_type)) client.disconnect("Malformed packet");
+			switch (msg_type)
+			{
+				case net::MSG_TYPE_DISCONNECT:
+					packet >> client.disconnect_reason;
+					client.disconnect(client.disconnect_reason);
+					continue;
+			};
+		} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
+			client.disconnect("Connection closed");
+		}
+		break;
+	}
+	
+	// Send a TCP heartbeat packet if interval is passed
+	if (client.heartbeat>HEARTBEAT_DELAY) client.sendHeartbeat();
 }
 
 void ServerNet::handleDisconnect (Client& client)
@@ -290,13 +343,13 @@ void ServerNet::handleDisconnect (Client& client)
 	
 	sf::Socket::Status err = client.tcp.send(packet);
 	if (err==sf::Socket::Done) {
-		cout << "Disconnect message sent" << endl;
+//		cout << "Disconnect message sent" << endl;
 		client.status = DESTROY;
 	} else if (err==sf::Socket::Disconnected || err==sf::Socket::Error) {
-		cout << "Couldn't send disconnect message (disconnected or error)" << endl;
+//		cout << "Couldn't send disconnect message (disconnected or error)" << endl;
 		client.status = DESTROY;
 	} else {
-		cout << "Couldn't send disconnect message" << endl;
+//		cout << "Couldn't send disconnect message" << endl;
 	}
 }
 

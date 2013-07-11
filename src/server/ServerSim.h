@@ -54,12 +54,12 @@ struct ServerSim : public Sim, public ServerNet
 		ServerNet_cleanup();
 	}
 	
-	void ServerSim_tick (float dt)
+	bool ServerSim_tick (float dt)
 	{
-		ServerNet_tick(dt);
-		Sim_tick(dt);
+		if (!ServerNet_tick(dt)) return false;
+		if (!Sim_tick(dt)) return false;
+		return true;
 	}
-	
 	
 };
 
