@@ -1,14 +1,20 @@
 
 
 #pragma once
-#include <vector>
+#include <map>
+#include <SFML/Network.hpp>
 #include "common.h"
 #include "Ship.h"
-typedef std::vector<Ship> ShipVector;
+typedef std::map<ShipID,Ship> ShipMap;
 
 
-struct Sim {
-	ShipVector ships;
+struct Sim
+{
+	ShipMap ships;
+	ShipID  next_ship_id;
 	
-	bool Sim_tick (float dt);
+	     Sim             () : next_ship_id(1) {}
+	bool Sim_tick        (float dt);
+	void getShipMovement (sf::Packet& packet);
+	void setShipMovement (sf::Packet& packet);
 };

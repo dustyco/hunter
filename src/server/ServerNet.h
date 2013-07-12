@@ -37,6 +37,9 @@ struct ServerNet
 		string        disconnect_reason;
 		Status        status;
 		sf::TcpSocket tcp;
+		bool          udp_return;
+		sf::IpAddress udp_address;
+		uint16_t      udp_port;
 		PilotControls pilot_controls;
 		
 		     Client        () : timeout(0), heartbeat(0), status(GET_GREETING) {}
@@ -50,6 +53,7 @@ struct ServerNet
 	sf::UdpSocket   udp;
 	ClientList      clients_connecting;
 	ClientMap       clients;
+	sf::Packet      ship_movement;
 	
 	bool ServerNet_init    ();
 	bool ServerNet_tick    (float dt);
@@ -206,6 +210,11 @@ void ServerNet::readUDP ()
 		{
 			Client& client = *client_it->second;
 			
+			// Set the return address info for responses
+			client.udp_return = true;
+			client.udp_address = remote_address;
+			client.udp_port = remote_port;
+			
 			// Reset the client's timeout
 			client.timeout = 0;
 			
@@ -322,6 +331,9 @@ void ServerNet::handleNormal (Client& client)
 		}
 		break;
 	}
+	
+	// Send ship movement over UDP
+	if (!ship_movement.endOfPacket() && client.udp_return) udp.send(ship_movement, client.udp_address, client.udp_port);
 	
 	// Send a TCP heartbeat packet if interval is passed
 	if (client.heartbeat>HEARTBEAT_DELAY) client.sendHeartbeat();

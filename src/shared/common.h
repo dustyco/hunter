@@ -30,6 +30,7 @@ private:
 
 
 typedef uint32_t PlayerID;
+typedef uint32_t ShipID;
 
 
 // Analog axes from -1 to 1

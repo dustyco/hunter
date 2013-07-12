@@ -5,14 +5,18 @@
 #include "Cell.h"
 
 
+typedef uint32_t ShipID;
+
 struct Ship
 {
 	// Cells
 	Cell cells[CELL_STRIDE][CELL_STRIDE];
 	
-	// Physics
+	// Movement
 	Vec2          pos, posv;
 	float         rot, rotv;
+	
+	// Physics
 	float         mass, moment;
 	Vec2          local_center;
 	

@@ -6,6 +6,7 @@ add_sources(shared
 	Ship.cpp
 	Cell.cpp
 	PlayerDB.cpp
+	common_sfml_network.cpp
 )
 
 # Suppress warnings

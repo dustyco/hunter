@@ -16,7 +16,7 @@ struct ServerSim : public Sim, public ServerNet
 	
 	bool ServerSim_init ()
 	{
-		{
+/*		{
 			Ship ship;
 			for (int y=0; y!=16; ++y)
 			for (int x=0; x!=5; ++x) {
@@ -43,7 +43,7 @@ struct ServerSim : public Sim, public ServerNet
 			ship.rotv = 0;
 			ships.push_back(ship);
 		}
-		
+*/		
 		if (!ServerNet_init()) return false;
 		
 		return true;
@@ -58,6 +58,12 @@ struct ServerSim : public Sim, public ServerNet
 	{
 		if (!ServerNet_tick(dt)) return false;
 		if (!Sim_tick(dt)) return false;
+		
+		// Get latest ship movement and put it in ServerNet to be broadcast
+		ship_movement.clear();
+		ship_movement << net::MSG_TYPE_SHIP_MOVEMENT;
+		getShipMovement(ship_movement);
+	
 		return true;
 	}
 	

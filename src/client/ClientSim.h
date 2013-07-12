@@ -63,7 +63,7 @@ bool ClientSim::ClientSim_init ()
 		part_sprite.setScale(2.0/64, -2.0/64);
 	} else return false;
 */		
-	{
+/*	{
 		Ship ship;
 		for (int y=0; y!=16; ++y)
 		for (int x=0; x!=5; ++x) {
@@ -90,7 +90,7 @@ bool ClientSim::ClientSim_init ()
 		ship.rotv = 0;
 		ships.push_back(ship);
 	}
-	int size = ships.size();
+*/	
 	
 	pilot_controls.clear();
 	
@@ -105,7 +105,15 @@ bool ClientSim::ClientSim_init ()
 void ClientSim::ClientSim_tick (float dt)
 {
 	ClientNet_tick(dt);
-	ships[CURRENT_SHIP].pilot_controls = pilot_controls;
+	
+	// Apply ship movement updates from ClientNet
+	while (!ship_movement_packets.empty())
+	{
+		setShipMovement(ship_movement_packets.front());
+		ship_movement_packets.pop_front();
+	}
+	
+	// Simulate
 	Sim_tick(dt);
 }
 
@@ -175,8 +183,8 @@ void ClientSim::ClientSim_draw (sf::RenderTarget& target)
 	target.setView(view);
 	
 	// DRAW EACH SHIP //////////////////////////////////////////////////////////////////
-	for (ShipVector::const_iterator ship_it=ships.begin(); ship_it!=ships.end(); ++ship_it) {
-		const Ship& ship = *ship_it;
+	for (ShipMap::const_iterator ship_it=ships.begin(); ship_it!=ships.end(); ++ship_it) {
+		const Ship& ship = ship_it->second;
 //		part_sprite.setRotation(ship.rot*DEG_PER_RAD);
 		hull_sprite.setRotation(ship.rot*DEG_PER_RAD);
 		hull_sprite.setColor(sf::Color(40, 240, 40, 255));

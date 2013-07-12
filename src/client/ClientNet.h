@@ -1,9 +1,11 @@
 
 
+#pragma once
 #ifndef _WIN32
 	#include <csignal>
 #endif
 #include <iostream>
+#include <list>
 #include <SFML/Network.hpp>
 #include "common_sfml_network.h"
 using namespace std;
@@ -36,6 +38,7 @@ struct ClientNet
 	Status        status;
 	string        disconnect_reason;
 	PilotControls pilot_controls;
+	PacketList    ship_movement_packets;
 	
 	void ClientNet_init        ();
 	void ClientNet_tick        (float dt);
@@ -146,7 +149,7 @@ void ClientNet::handleNormal ()
 		{
 			timeout = 0;
 			net::MsgType msg_type;
-			if (!(packet >> msg_type)) disconnect("Malformed packet");
+			if (!(packet >> msg_type)) disconnect("Malformed TCP message");
 			switch (msg_type)
 			{
 				case net::MSG_TYPE_DISCONNECT:
@@ -158,6 +161,23 @@ void ClientNet::handleNormal ()
 			disconnect("Connection closed");
 		}
 		break;
+	}
+	
+	// Receive UDP messages
+	sf::Packet     packet;
+	sf::IpAddress  remote_address;
+	unsigned short remote_port;
+	while (udp.receive(packet, remote_address, remote_port) == sf::Socket::Done)
+	{
+		timeout = 0;
+		net::MsgType msg_type;
+		if (!(packet >> msg_type)) disconnect("Client: Malformed UDP message");
+		switch (msg_type)
+		{
+			case net::MSG_TYPE_SHIP_MOVEMENT:
+				ship_movement_packets.push_back(packet);
+				break;
+		};
 	}
 	
 	// Send a TCP heartbeat packet if interval is passed
