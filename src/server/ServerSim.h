@@ -16,17 +16,18 @@ struct ServerSim : public Sim, public ServerNet
 	
 	bool ServerSim_init ()
 	{
-/*		{
+		{
 			Ship ship;
 			for (int y=0; y!=16; ++y)
 			for (int x=0; x!=5; ++x) {
 				ship.cells[x][y].there = true;
 			}
 			ship.calculatePhysics();
-			ships.push_back(ship);
+			ships[0] = ship;
 		}
 		{
 			Ship ship;
+			ship.pilot = 1;
 			ship.cells[1][0].there = true;
 			ship.cells[0][1].there = true;
 			ship.cells[1][1].there = true;
@@ -41,9 +42,9 @@ struct ServerSim : public Sim, public ServerNet
 			ship.calculatePhysics();
 			ship.posv = Vec2(1, 0);
 			ship.rotv = 0;
-			ships.push_back(ship);
+			ships[1] = ship;
 		}
-*/		
+		
 		if (!ServerNet_init()) return false;
 		
 		return true;

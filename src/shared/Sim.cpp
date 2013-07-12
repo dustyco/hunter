@@ -47,7 +47,6 @@ void Sim::setShipMovement (sf::Packet& packet)
 {
 	uint32_t count;
 	if (!(packet >> count)) return;
-	cout << "Ship movement updates " << count << endl;
 	for (int i=0; i!=count; ++i)
 	{
 		ShipID id;
