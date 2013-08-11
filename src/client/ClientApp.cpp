@@ -1,38 +1,23 @@
+#include "ClientApp.h"
 
 
+#include <cmath>
+#include <sstream>
 #include <iostream>
+#include <iomanip>
+#ifdef _WIN32
+	#include <windows.h>
+#endif
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <SFML/Graphics.hpp>
-#include "Sim.h"
-#include "ClientNet.h"
-#include "util/convert_sf_vector.h"
+#include "common.h"
+
 using namespace std;
 
 
-const float PI = 3.14159265;
-const float DEG_PER_RAD = 180.0/PI;
-const int CURRENT_SHIP = 1;
 
-
-struct ClientSim : public Sim, public ClientNet
-{
-	sf::Texture   stars_far;
-	sf::Texture   stars_medium;
-	sf::Texture   stars_close;
-	sf::Texture   part_texture;
-	sf::Sprite    part_sprite;
-	sf::Texture   hull_texture;
-	sf::Sprite    hull_sprite;
-	Vec2          cam_pos;  // Meters
-	float         cam_rot;  // Radians
-	float         cam_zoom; // Meters from top to bottom of screen
-	
-	bool ClientSim_init ();
-	void ClientSim_tick (float dt);
-	void ClientSim_draw (sf::RenderTarget& target);
-	sf::IntRect partTexture (PartID id, int size);
-};
-
-bool ClientSim::ClientSim_init ()
+bool ClientApp::ClientSim_init ()
 {
 	if (stars_far.loadFromFile("stars_far.jpg")) {
 		stars_far.setSmooth(true);
@@ -101,7 +86,7 @@ bool ClientSim::ClientSim_init ()
 	return true;
 }
 
-void ClientSim::ClientSim_tick (float dt)
+void ClientApp::ClientSim_tick (float dt)
 {
 	ClientNet_tick(dt);
 	
@@ -116,7 +101,7 @@ void ClientSim::ClientSim_tick (float dt)
 	Sim_tick(dt);
 }
 
-void ClientSim::ClientSim_draw (sf::RenderTarget& target)
+void ClientApp::ClientSim_draw (sf::RenderTarget& target)
 {
 	// WORLD VIEW //////////////////////////////////////////////////////////////////////
 	cam_pos = ships[CURRENT_SHIP].pos;
@@ -210,7 +195,7 @@ void ClientSim::ClientSim_draw (sf::RenderTarget& target)
 	}
 }
 
-sf::IntRect ClientSim::partTexture (PartID id, int size)
+sf::IntRect ClientApp::partTexture (PartID id, int size)
 {
 	PartID row = id / SHIP_PART_STRIDE;
 	PartID col = id % SHIP_PART_STRIDE;
@@ -218,3 +203,119 @@ sf::IntRect ClientSim::partTexture (PartID id, int size)
 	return sf::IntRect(col*size, row*size, size, size);
 }
 
+// The program starts and ends here
+int ClientApp::go (int argc, char const** argv) {
+	if (!setup(argc, argv)) {
+		cout << "Error: ClientApp::setup() returned false" << endl;
+		return 1;
+	}
+	while (loop()) {}
+	if (!cleanup()) {
+		cout << "Error: ClientApp::cleanup() returned false" << endl;
+		return 1;
+	}
+	return 0;
+}
+
+bool ClientApp::setup (int argc, char const** argv) {
+	
+	// Server hostname
+	if (argc>1) {
+		server_hostname = argv[1];
+	} else {
+		cout << "Usage: " << argv[0] << " [hostname]" << endl;
+		cout << "\tConnects to [hostname]:" << net::DEFAULT_PORT << endl;
+		return false;
+	}
+	
+	// SET UP WINDOW ///////////////////////////////////////////////////////////////////
+	string window_title = "Hunter";
+	sf::VideoMode video_mode = sf::VideoMode::getDesktopMode();
+	#ifdef SFML_SYSTEM_WINDOWS
+		// Windows will literally make the window this size and
+		// let it get covered by the task bar so shrink it
+		// Also, when the user unmaximizes it, this is what
+		// will be remembered
+		video_mode.width -= 10;
+		video_mode.height -= 100;
+	#endif
+	window.create( video_mode, window_title, sf::Style::Resize | sf::Style::Close );
+	#ifdef SFML_SYSTEM_WINDOWS
+		// Maximize to fill the screen
+		ShowWindow(window.getSystemHandle(), SW_MAXIMIZE);
+	#endif
+	window.setVerticalSyncEnabled(true);
+	window.setMouseCursorVisible(true);
+	
+	cam_zoom = 20;
+	
+	ClientSim_init();
+	
+	return true;
+}
+
+bool ClientApp::loop () {
+	
+	// INPUT ////////////////////////////////////////////////////////////////////////////
+	handleInput();
+	if (status == QUIT) return false;
+	
+	// SIMULATE /////////////////////////////////////////////////////////////////////////
+	ClientSim_tick(1.0/60.0);
+	
+	// DRAW WORLD ////////////////////////////////////////////////////////////////////////
+	window.clear();
+	ClientSim_draw(window);
+	window.display();
+	
+	return true;
+}
+
+bool ClientApp::cleanup () {
+	return true;
+}
+
+void ClientApp::handleInput ()
+{
+	// State based controls
+//	grab = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+	mouse_screen = sf::Mouse::getPosition(window);
+	mouse_world = window.mapPixelToCoords(mouse_screen);
+	
+	pilot_controls.translate.y = 
+		  (sf::Keyboard::isKeyPressed(sf::Keyboard::W)?(1):(0))
+		- (sf::Keyboard::isKeyPressed(sf::Keyboard::S)?(1):(0));
+	pilot_controls.translate.x = 
+		  (sf::Keyboard::isKeyPressed(sf::Keyboard::E)?(1):(0))
+		- (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)?(1):(0));
+	pilot_controls.rotate =
+		  (sf::Keyboard::isKeyPressed(sf::Keyboard::A)?(1):(0))
+		- (sf::Keyboard::isKeyPressed(sf::Keyboard::D)?(1):(0));
+	
+	// Event based controls
+	sf::Event event;
+	while (window.pollEvent(event)) {
+		switch (event.type) {
+			case sf::Event::Closed:             disconnect("Window closed"); return;
+//			case sf::Event::LostFocus:          releaseControls(); break;
+//			case sf::Event::GainedFocus:        break;
+//			case sf::Event::Resized:            break;
+//			case sf::Event::MouseMoved:         event.mouseMove.x; break;
+			case sf::Event::MouseButtonPressed:
+//				switch (event.mouseButton.button) {
+//					case sf::Mouse::Left:       mouseLeft(); break;
+//					case sf::Mouse::Right:      mouseRight(); break;
+//				}
+				break;
+			case sf::Event::MouseWheelMoved:
+				cam_zoom *= pow(0.9, event.mouseWheel.delta);
+				cam_zoom = min(max(cam_zoom, 10.0f), 100.0f);
+				break;
+			case sf::Event::KeyPressed:
+				switch (event.key.code) {
+					case sf::Keyboard::Escape:  disconnect("Escape key pressed"); return;
+				}
+				break;
+		}
+	}
+}

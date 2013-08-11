@@ -3,6 +3,14 @@
 include_directories(.)
 #add_subdirectory(dir)
 
+#add sources
+add_sources(client
+	ClientApp.cpp
+	Renderer.cpp
+	main.cpp
+	ClientNet.cpp
+)
+
 # Suppress warnings
 if(MSVC)
 	# Conversions
@@ -16,7 +24,7 @@ endif()
 message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 set(target_NAME hunter)
-add_executable(${target_NAME} main.cpp ${client_SRC})
+add_executable(${target_NAME} ${client_SRC} ${client_SRC})
 target_link_libraries(${target_NAME}
 	${SFML_LIBRARIES}
 	${shared_LIB}
