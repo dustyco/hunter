@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Renderer.h"
+
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <cmath>
@@ -16,13 +18,8 @@
 #include "util/convert_sf_vector.h"
 
 
-const float PI = 3.14159265;
-const float DEG_PER_RAD = 180.0/PI;
-const int CURRENT_SHIP = 1;
-
 struct ClientApp : public Sim, public ClientNet
 {
-	sf::RenderWindow window;
 	sf::Clock        clock;
 	sf::Vector2i     mouse_screen;
 	sf::Vector2f     mouse_world;
@@ -33,23 +30,14 @@ struct ClientApp : public Sim, public ClientNet
 	bool cleanup     ();
 	void handleInput ();
 	
-	//^old App --- v old Sim
+	//^old App --- v New Stuff
 	
+	Renderer renderer;
 	
-	sf::Texture   stars_far;
-	sf::Texture   stars_medium;
-	sf::Texture   stars_close;
-	sf::Texture   part_texture;
-	sf::Sprite    part_sprite;
-	sf::Texture   hull_texture;
-	sf::Sprite    hull_sprite;
-	Vec2          cam_pos;  // Meters
-	float         cam_rot;  // Radians
-	float         cam_zoom; // Meters from top to bottom of screen
+	// v old Sim
+	
 	
 	bool ClientSim_init ();
 	void ClientSim_tick (float dt);
-	void ClientSim_draw (sf::RenderTarget& target);
-	sf::IntRect partTexture (PartID id, int size);
 };
 
