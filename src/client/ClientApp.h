@@ -18,8 +18,11 @@
 #include "util/convert_sf_vector.h"
 
 
-struct ClientApp : public Sim, public ClientNet
+struct ClientApp
 {
+	Sim sim;
+	ClientNet network;	
+	
 	sf::Clock        clock;
 	sf::Vector2i     mouse_screen;
 	sf::Vector2f     mouse_world;

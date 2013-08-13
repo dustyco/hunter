@@ -28,7 +28,7 @@ bool ClientApp::ClientSim_init ()
 			}
 		}
 		ship.calculatePhysics();
-		ships[0] = ship;
+		sim.ships[0] = ship;
 	}
 	{
 		Ship ship;
@@ -46,29 +46,29 @@ bool ClientApp::ClientSim_init ()
 		ship.calculatePhysics();
 		ship.posv = Vec2(1, 0);
 		ship.rotv = 0;
-		ships[1] = ship;
+		sim.ships[1] = ship;
 	}
 	
-	pilot_controls.clear();
+	network.pilot_controls.clear();
 	
-	ClientNet_init();
+	network.ClientNet_init();
 	
 	return true;
 }
 
 void ClientApp::ClientSim_tick (float dt)
 {
-	ClientNet_tick(dt);
+	network.ClientNet_tick(dt);
 	
 	// Apply ship movement updates from ClientNet
-	while (!ship_movement_packets.empty())
+	while (!network.ship_movement_packets.empty())
 	{
-		setShipMovement(ship_movement_packets.front());
-		ship_movement_packets.pop_front();
+		sim.setShipMovement(network.ship_movement_packets.front());
+		network.ship_movement_packets.pop_front();
 	}
 	
 	// Simulate
-	Sim_tick(dt);
+	sim.Sim_tick(dt);
 }
 
 // The program starts and ends here
@@ -93,7 +93,7 @@ bool ClientApp::setup (int argc, char const** argv) {
 	
 	// Server hostname
 	if (argc>1) {
-		server_hostname = argv[1];
+		network.server_hostname = argv[1];
 	} else {
 		cout << "Usage: " << argv[0] << " [hostname]" << endl;
 		cout << "\tConnects to [hostname]:" << net::DEFAULT_PORT << endl;
@@ -109,12 +109,12 @@ bool ClientApp::loop () {
 	
 	// INPUT ////////////////////////////////////////////////////////////////////////////
 	handleInput();
-	if (status == QUIT) return false;
+	if (network.status == ClientNet::QUIT) return false;
 	
 	// SIMULATE /////////////////////////////////////////////////////////////////////////
 	ClientSim_tick(1.0/60.0);
 	
-	renderer.render((*this));
+	renderer.render(sim);
 	
 	return true;
 }
@@ -130,13 +130,13 @@ void ClientApp::handleInput ()
 	mouse_screen = renderer.getMouseScreen();
 	mouse_world = renderer.getMouseWorld();
 	
-	pilot_controls.translate.y = 
+	network.pilot_controls.translate.y = 
 		  (sf::Keyboard::isKeyPressed(sf::Keyboard::W)?(1):(0))
 		- (sf::Keyboard::isKeyPressed(sf::Keyboard::S)?(1):(0));
-	pilot_controls.translate.x = 
+	network.pilot_controls.translate.x = 
 		  (sf::Keyboard::isKeyPressed(sf::Keyboard::E)?(1):(0))
 		- (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)?(1):(0));
-	pilot_controls.rotate =
+	network.pilot_controls.rotate =
 		  (sf::Keyboard::isKeyPressed(sf::Keyboard::A)?(1):(0))
 		- (sf::Keyboard::isKeyPressed(sf::Keyboard::D)?(1):(0));
 	
@@ -144,7 +144,7 @@ void ClientApp::handleInput ()
 	sf::Event event;
 	while ( renderer.getEvent(event) ) {
 		switch (event.type) {
-			case sf::Event::Closed:             disconnect("Window closed"); return;
+			case sf::Event::Closed:             network.disconnect("Window closed"); return;
 //			case sf::Event::LostFocus:          releaseControls(); break;
 //			case sf::Event::GainedFocus:        break;
 //			case sf::Event::Resized:            break;
@@ -160,7 +160,7 @@ void ClientApp::handleInput ()
 				break;
 			case sf::Event::KeyPressed:
 				switch (event.key.code) {
-					case sf::Keyboard::Escape:  disconnect("Escape key pressed"); return;
+					case sf::Keyboard::Escape:  network.disconnect("Escape key pressed"); return;
 				}
 				break;
 		}
