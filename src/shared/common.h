@@ -1,9 +1,12 @@
-
-
 #pragma once
+
+
+#include <stdexcept>
 #include <stdint.h>
 #include "hmath/all.h"
 using namespace hmath;
+
+
 typedef vec<2,int>    Vec2i;
 typedef vec<3,int>    Vec3i;
 typedef vec<4,int>    Vec4i;
@@ -17,7 +20,6 @@ typedef line<2,float> Line2;
 typedef line<3,float> Line3;
 typedef line<4,float> Line4;
 
-
 class NonCopyable
 {
 protected:
@@ -28,10 +30,8 @@ private:
 	NonCopyable & operator = (const NonCopyable &);
 };
 
-
 typedef uint32_t PlayerID;
 typedef uint32_t ShipID;
-
 
 // Analog axes from -1 to 1
 struct PilotControls
@@ -41,5 +41,6 @@ struct PilotControls
 	PilotControls () { clear(); }
 	void clear () { translate = Vec2::ORIGIN; rotate = 0; }
 };
+
 
 

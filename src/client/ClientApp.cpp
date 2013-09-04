@@ -1,25 +1,47 @@
-#include "ClientApp.h"
 
 
-
-#include <cmath>
-#include <sstream>
 #include <iostream>
-#include <iomanip>
-#ifdef _WIN32
-	#include <windows.h>
-#endif
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <SFML/Graphics.hpp>
+#include <algorithm>
 #include "common.h"
-
+#include "ClientApp.h"
 using namespace std;
 
 
-
-bool ClientApp::ClientSim_init ()
+int ClientApp::go (int argc, char const** argv)
 {
+	try
+	{
+		args.resize(argc);
+		copy(argv, argv+argc, args.begin());
+		
+		setup();
+		while (loop()) {}
+		cleanup();
+	}
+	catch (exception& e)
+	{
+		if (!string(e.what()).empty())
+			cout << "Unhandled exception: " << e.what() << endl;
+			
+		return 1;
+	}
+	
+	return 0;
+}
+
+bool ClientApp::setup ()
+{
+	// Server hostname
+	if (args.size() > 1) net.server_hostname = args[1];
+	else
+	{
+		cout << "Usage: " << args[0] << " [hostname]" << endl;
+		cout << "\tConnects to [hostname]:" << net::DEFAULT_PORT << endl;
+		throw runtime_error("");
+	}
+	
+	renderer.init();
+	
 	{
 		Ship ship;
 		for (int y=0; y!=16; ++y){
@@ -49,94 +71,58 @@ bool ClientApp::ClientSim_init ()
 		sim.ships[1] = ship;
 	}
 	
-	network.pilot_controls.clear();
+	net.pilot_controls.clear();
 	
-	network.ClientNet_init();
+	net.ClientNet_init();
 	
 	return true;
 }
 
-void ClientApp::ClientSim_tick (float dt)
+bool ClientApp::loop ()
 {
-	network.ClientNet_tick(dt);
-	
-	// Apply ship movement updates from ClientNet
-	while (!network.ship_movement_packets.empty())
-	{
-		sim.setShipMovement(network.ship_movement_packets.front());
-		network.ship_movement_packets.pop_front();
-	}
-	
-	// Simulate
-	sim.Sim_tick(dt);
-}
-
-// The program starts and ends here
-int ClientApp::go (int argc, char const** argv) {
-	if (!setup(argc, argv)) {
-		cout << "Error: ClientApp::setup() returned false" << endl;
-		return 1;
-	}
-	if (!renderer.init()) {
-		cout << "Error: Renderer::init() returned false" << endl;
-		return 1;
-	}
-	while (loop()) {}
-	if (!cleanup()) {
-		cout << "Error: ClientApp::cleanup() returned false" << endl;
-		return 2;
-	}
-	return 0;
-}
-
-bool ClientApp::setup (int argc, char const** argv) {
-	
-	// Server hostname
-	if (argc>1) {
-		network.server_hostname = argv[1];
-	} else {
-		cout << "Usage: " << argv[0] << " [hostname]" << endl;
-		cout << "\tConnects to [hostname]:" << net::DEFAULT_PORT << endl;
-		return false;
-	}
-	
-	ClientSim_init();
-	
-	return true;
-}
-
-bool ClientApp::loop () {
+	float dt = 1.0/60.0;
 	
 	// INPUT ////////////////////////////////////////////////////////////////////////////
 	handleInput();
-	if (network.status == ClientNet::QUIT) return false;
+	if (net.status == ClientNet::QUIT) return false;
 	
 	// SIMULATE /////////////////////////////////////////////////////////////////////////
-	ClientSim_tick(1.0/60.0);
+	net.ClientNet_tick(dt);
+	
+	// Apply ship movement updates from ClientNet
+	while (!net.ship_movement_packets.empty())
+	{
+		sim.setShipMovement(net.ship_movement_packets.front());
+		net.ship_movement_packets.pop_front();
+	}
+	
+	sim.Sim_tick(dt);
 	
 	renderer.render(sim);
 	
 	return true;
 }
 
-bool ClientApp::cleanup () {
+bool ClientApp::cleanup ()
+{
 	return true;
 }
 
 void ClientApp::handleInput ()
 {
+	// TODO Copy code from glide that only grabs states when window is focused
 	// State based controls
 //	grab = sf::Mouse::isButtonPressed(sf::Mouse::Left);
 	mouse_screen = renderer.getMouseScreen();
 	mouse_world = renderer.getMouseWorld();
 	
-	network.pilot_controls.translate.y = 
+	net.pilot_controls.translate.y = 
 		  (sf::Keyboard::isKeyPressed(sf::Keyboard::W)?(1):(0))
 		- (sf::Keyboard::isKeyPressed(sf::Keyboard::S)?(1):(0));
-	network.pilot_controls.translate.x = 
+	net.pilot_controls.translate.x = 
 		  (sf::Keyboard::isKeyPressed(sf::Keyboard::E)?(1):(0))
 		- (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)?(1):(0));
-	network.pilot_controls.rotate =
+	net.pilot_controls.rotate =
 		  (sf::Keyboard::isKeyPressed(sf::Keyboard::A)?(1):(0))
 		- (sf::Keyboard::isKeyPressed(sf::Keyboard::D)?(1):(0));
 	
@@ -144,7 +130,7 @@ void ClientApp::handleInput ()
 	sf::Event event;
 	while ( renderer.getEvent(event) ) {
 		switch (event.type) {
-			case sf::Event::Closed:             network.disconnect("Window closed"); return;
+			case sf::Event::Closed:             net.disconnect("Window closed"); return;
 //			case sf::Event::LostFocus:          releaseControls(); break;
 //			case sf::Event::GainedFocus:        break;
 //			case sf::Event::Resized:            break;
@@ -160,7 +146,7 @@ void ClientApp::handleInput ()
 				break;
 			case sf::Event::KeyPressed:
 				switch (event.key.code) {
-					case sf::Keyboard::Escape:  network.disconnect("Escape key pressed"); return;
+					case sf::Keyboard::Escape:  net.disconnect("Escape key pressed"); return;
 				}
 				break;
 		}
